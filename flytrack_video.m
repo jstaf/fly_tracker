@@ -10,19 +10,20 @@ Nfrm_movie = floor(vr.Duration * vr.FrameRate);
 %% create a background
 
 %pick a random set of 100 frames to create the background
-randv = rand(100,1);
+bg_number = 100;
+randv = rand(bg_number,1);
 bg_idx = sort(round(randv * Nfrm_movie));
 
-%read each frame of the background and average them
-bg_array = zeros(resolution(2), resolution(1), 100, 'uint8');
+%read each frame of the background and average them to create a background
+%image
+bg_array = zeros(resolution(2), resolution(1), bg_number, 'uint8');
 bg_step = 0;
-while bg_step <= 0
+while bg_step < bg_number
     bg_step = bg_step + 1;
     bg_frame = rgb2gray(read(vr, bg_idx(bg_step)));
-    bg_array = bg_frame;
+    bg_array(:,:,bg_step) = bg_frame;
 end 
-
-%background = mean(read(vr, bg_idx));
+background =  uint8(mean(bg_array, 3));
 
 %% analyze each frame of the video and subtrack background
 

@@ -35,6 +35,13 @@ for nofr = 1:Nfrm_movie
     frame = read(vr, nofr);
     frame_gray = rgb2gray(frame);
     
+    %"subtract" background image using GIMP's image division layer mode
+    %formula (TWICE!)
+    frame_gray = uint8((256 * double(frame_gray))./(double(background) + 1));
+    frame_gray = uint8((256 * double(frame_gray))./(double(background) + 1));
+
+    %imshow(frame_gray)
+    
     %find darkest point on image and its coordinates
     minValue = min(frame_gray(:));
     [ypos, xpos] = find(frame_gray == minValue);

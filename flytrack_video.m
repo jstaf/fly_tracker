@@ -3,16 +3,30 @@
 
 %% open video
 
-vr = VideoReader('huge_movie.AVI');
+%input video name here
+video_name = 'half_res.AVI';
+
+vr = VideoReader(video_name);
 resolution = [vr.Width vr.Height]; 
-Nfrm_movie = floor(vr.Duration * vr.FrameRate);
+nfrm_movie = floor(vr.Duration * vr.FrameRate);
+
+%% define region of interest (ROI)
+
+disp('Click and drag to define region of interest, double-click to proceed.');
+figure, imshow(read(vr, 1));
+ROI_select = imrect;
+ROI = wait(ROI_select);
+disp('ROI selected, proceeding with video analysis.');
+%ROI takes form of [xmin ymin width height]
 
 %% create a background
+
+disp('Calculating image background.');
 
 %pick a random set of 100 frames to create the background
 bg_number = 100;
 randv = rand(bg_number,1);
-bg_idx = sort(round(randv * Nfrm_movie));
+bg_idx = sort(round(randv * nfrm_movie));
 
 %read each frame of the background and average them to create a background
 %image
@@ -25,34 +39,40 @@ while bg_step < bg_number
 end 
 background =  uint8(mean(bg_array, 3));
 
-%% analyze each frame of the video and subtrack background
+%% analyze each frame of the video and subtract background
+
+disp('Calculating fly positions.');
 
 %initialize array used to log position
-position_array = zeros(Nfrm_movie,3);
-
-for nofr = 1:Nfrm_movie
+position_array = zeros(nfrm_movie,3);
+for nofr = 1:nfrm_movie
     % extract image from video
-    frame = read(vr, nofr);
-    frame_gray = rgb2gray(frame);
+    frame_gray = rgb2gray(read(vr, nofr));
     
     %"subtract" background image using GIMP's image division layer mode
     %formula (TWICE!)
     frame_gray = uint8((256 * double(frame_gray))./(double(background) + 1));
     frame_gray = uint8((256 * double(frame_gray))./(double(background) + 1));
-
-    %imshow(frame_gray)
     
-    %find darkest point on image and its coordinates
-    minValue = min(frame_gray(:));
-    [ypos, xpos] = find(frame_gray == minValue);
-      
+    %extract ROI
+    frame_crop = imcrop(frame_gray, ROI);
+    
+    %find darkest pixel on image and its coordinates... should be the fly!
+    minValue = min(frame_crop(:));
+    [ypos, xpos] = find(frame_crop == minValue);
     fr_position = [mean(xpos), mean(ypos), nofr];
     position_array(nofr,:) = fr_position;
 end 
+%correct position coordinates for ROI operation and convert frame number to
+%time in seconds
+position_array = [position_array(:,1) + ROI(1), ...
+    position_array(:,2) + ROI(2), ...
+    position_array(:,3)/vr.FrameRate];
 
 %% plot positions
 
-% invert the y coordinates to match the video
+disp('Creating output.');
 plot(position_array(:,1), position_array(:,2))
 axis([0 resolution(1) 0 resolution(2)])
+% inverts the y coordinates to match the video
 set(gca, 'Ydir', 'reverse')

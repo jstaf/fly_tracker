@@ -1,11 +1,36 @@
-% a short script to open an image and calculate the position of a fruit fly
-% against a light background
+%% initialize settings
+
+% A short script to open an image and calculate the position of a fruit fly
+% against a light background. Output graph is a sanity check for the
+% path of the fly. 
+
+% Known issues: 
+% -fly path is a little bit "jagged"
+% -fly can "teleport" if the script doesn't find it in a frame
+% -only one fly at the moment
+
+% Jeff Stafford
+
+%input dimensions of assay vial, units in cm
+top_half_height = 3;
+bottom_half_height = 8;
+inner_diameter = 1.5;
+
+%input video name here. MUST BE IN WORKING DIRECTORY OF THIS SCRIPT.
+video_name = 'half_res.AVI';
+
+%do you want output?
+output = true;
+%if so, what do you want it to be named?
+output_name = 'tracker_out2.csv';
+% key to output csv:
+% column 1 = Time (in seconds)
+% column 2 = Fly 1 x position (in cm from left edge of furthest left ROI)
+% column 3 = Fly 1 y position (in cm from absolute top of vial)
 
 %% open video
 
-%input video name here
-video_name = 'half_res.AVI';
-
+disp('Opening video, please wait.')
 vr = VideoReader(video_name);
 resolution = [vr.Width vr.Height]; 
 nfrm_movie = floor(vr.Duration * vr.FrameRate);
@@ -15,9 +40,10 @@ nfrm_movie = floor(vr.Duration * vr.FrameRate);
 disp('Click and drag to define region of interest, double-click to proceed.');
 figure, imshow(read(vr, 1));
 ROI_select = imrect;
-ROI = wait(ROI_select);
+ROI = wait(ROI_select); %ROI takes form of [xmin ymin width height]
+%close(figure) % doesnt work
 disp('ROI selected, proceeding with video analysis.');
-%ROI takes form of [xmin ymin width height]
+
 
 %% create a background
 
@@ -56,23 +82,45 @@ for nofr = 1:nfrm_movie
     
     %extract ROI
     frame_crop = imcrop(frame_gray, ROI);
-    
+        %this is the bit that chops the array down to minimum video length.
     %find darkest pixel on image and its coordinates... should be the fly!
     minValue = min(frame_crop(:));
     [ypos, xpos] = find(frame_crop == minValue);
     fr_position = [mean(xpos), mean(ypos), nofr];
     position_array(nofr,:) = fr_position;
 end 
-%correct position coordinates for ROI operation and convert frame number to
-%time in seconds
+%correct position coordinates for ROI operation
 position_array = [position_array(:,1) + ROI(1), ...
     position_array(:,2) + ROI(2), ...
-    position_array(:,3)/vr.FrameRate];
+    position_array(:,3)];
 
-%% plot positions
+%% process and output data
+
+%Convert position coordinates to real, meaningful positions (coordinates in
+%cm and time in seconds. Scale is in cm/pixels. 
+xscale = inner_diameter / ROI(3);
+yscale_top = top_half_height / ROI(4); % need to change ROI for second fly
+yscale_bottom = bottom_half_height / ROI(4);
+corrected_array = [position_array(:,3)/vr.FrameRate, ...
+    (position_array(:,1) - ROI(1)) * xscale, ...
+    (position_array(:,2) - ROI(2)) * yscale_top,];
 
 disp('Creating output.');
-plot(position_array(:,1), position_array(:,2))
-axis([0 resolution(1) 0 resolution(2)])
+plot(corrected_array(:,2), corrected_array(:,3) + 3)
+axis([0 inner_diameter 0 (bottom_half_height + top_half_height)])
 % inverts the y coordinates to match the video
 set(gca, 'Ydir', 'reverse')
+
+if output == true
+%     output_array = num2cell(corrected_array);
+%     output_array = vertcat( ...
+%     {'Time_s','Fly1_X_pos','Fly1_Y_pos'}, output_array);
+    output_array = corrected_array; 
+    csvwrite(output_name, output_array);
+end
+
+% old code to look at raw position within the image
+% plot(position_array(:,1), position_array(:,2))
+% axis([0 resolution(1) 0 resolution(2)])
+% % inverts the y coordinates to match the video
+% set(gca, 'Ydir', 'reverse')

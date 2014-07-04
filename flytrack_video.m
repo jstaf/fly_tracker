@@ -82,7 +82,7 @@ for nofr = 1:nfrm_movie
     
     %extract ROI
     frame_crop = imcrop(frame_gray, ROI);
-        %this is the bit that chops the array down to minimum video length.
+
     %find darkest pixel on image and its coordinates... should be the fly!
     minValue = min(frame_crop(:));
     [ypos, xpos] = find(frame_crop == minValue);
@@ -103,7 +103,7 @@ yscale_top = top_half_height / ROI(4); % need to change ROI for second fly
 yscale_bottom = bottom_half_height / ROI(4);
 corrected_array = [position_array(:,3)/vr.FrameRate, ...
     (position_array(:,1) - ROI(1)) * xscale, ...
-    (position_array(:,2) - ROI(2)) * yscale_top,];
+    (position_array(:,2) - ROI(2)) * yscale_bottom,];
 
 disp('Creating output.');
 plot(corrected_array(:,2), corrected_array(:,3) + 3)

@@ -19,8 +19,8 @@ inner_diameter = 1.5;
 %input video name here. MUST BE IN WORKING DIRECTORY OF THIS SCRIPT.
 video_name = 'half_res.AVI';
 
-%do you want output?
-output = true;
+%do you want .csv output?
+output = false;
 %if so, what do you want it to be named?
 output_name = 'tracker_out2.csv';
 % key to output csv:

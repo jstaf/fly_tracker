@@ -1,13 +1,16 @@
 %% initialize settings
 
 % This script loads output data from the flytrack_video script, collapses
-% data from multiple replicates, and performs stats. 
+% data from multiple replicates, and performs a bit of visualization. 
 
 % Jeff Stafford
 
-% File list to load. Write the names of the files you want to load here.
-% THEY MUST BE IN THE WORKING DIRECTORY OF THIS SCRIPT OR IT WONT WORK.
-file_list = {'tracker_out.csv', 'tracker_out2.csv' };
+% Known issues:
+% -Doesn't work for single input files.
+
+% File list to load. Write the names of the files you want to load here in
+% a comma delimited list. THEY MUST ALL BE IN THE WORKING DIRECTORY OF THIS SCRIPT OR IT WONT WORK.
+file_list = {'tracker_out.csv', 'tracker_out.csv' };
 
 % How long is the assay (in seconds)? If one of the csv files is shorter
 % than this, defaults to the shorter time.
@@ -25,8 +28,9 @@ inner_diameter = 1.5;
 
 num_files = size(file_list);
 num_files = num_files(2);
-disp({num_files 'files selected for analysis.'});
+disp(strcat(num2str(num_files), ' files selected for analysis.'));
 
+disp('Loading files...');
 % Iterates through every row of each file and adds it to "rep_combined"
 % array as long as there is video remaining. If video runs out of frames
 % for any replicate, chops length of all videos to minimum video length.
@@ -51,4 +55,29 @@ end
 
 %% bin positions from array
 
+% reshape rep_combined into reallllly long array
+array_size = size(rep_combined);
+rep_combined_lg = zeros(array_size(1) * num_files, 3);
+for dim = 1:array_size(3)
+    row = 1;
+    while row <= array_size(1)
+        rep_combined_lg(row + ((dim - 1) * array_size(1)),:) = rep_combined(row,:,dim);
+        row = row + 1;
+    end
+end
 
+% START BINNING!!! 
+% convert everything to 1mm wide "position coordinate" bins
+[xnum, xbins] = histc(rep_combined_lg(:,2), ...
+    linspace(min(rep_combined_lg(:,2)),max(rep_combined_lg(:,2)), 15));
+[ynum, ybins] = histc(rep_combined_lg(:,3), ...
+    linspace(min(rep_combined_lg(:,3)),max(rep_combined_lg(:,3)), 110));
+% bin on a per-"position coordinate" basis
+bin_matrix = full(sparse(ybins, xbins, 1));
+
+%% plot output
+
+bin_matrix_flip = flipud(bin_matrix);
+heatmap = HeatMap(bin_matrix_flip, ...
+    'Colormap', 'gray' ...
+    );

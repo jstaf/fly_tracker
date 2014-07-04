@@ -6,11 +6,11 @@
 % Jeff Stafford
 
 % Known issues:
-% -Doesn't work for single input files.
+% -the heatmap needs to be prettier, much prettier...
 
 % File list to load. Write the names of the files you want to load here in
 % a comma delimited list. THEY MUST ALL BE IN THE WORKING DIRECTORY OF THIS SCRIPT OR IT WONT WORK.
-file_list = {'tracker_out.csv', 'tracker_out.csv' };
+file_list = {'tracker_out.csv'};
 
 % How long is the assay (in seconds)? If one of the csv files is shorter
 % than this, defaults to the shorter time.
@@ -58,11 +58,15 @@ end
 % reshape rep_combined into reallllly long array
 array_size = size(rep_combined);
 rep_combined_lg = zeros(array_size(1) * num_files, 3);
-for dim = 1:array_size(3)
+if num_files == 1
+    rep_combined_lg = rep_combined;
+else
+    for dim = 1:array_size(3)
     row = 1;
     while row <= array_size(1)
         rep_combined_lg(row + ((dim - 1) * array_size(1)),:) = rep_combined(row,:,dim);
         row = row + 1;
+    end
     end
 end
 

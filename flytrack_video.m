@@ -35,10 +35,20 @@ vr = VideoReader(video_name);
 resolution = [vr.Width vr.Height]; 
 nfrm_movie = floor(vr.Duration * vr.FrameRate);
 
-%% define region of interest (ROI)
+%% define region of interest (ROI) and eliminate LR camera tilt
 
-disp('Click and drag to define region of interest, double-click to proceed.');
+%Draw a line to calculate camera tilt.
+disp('Click and drag along the edge of the vial to correct for camera tilt, double-click to proceed.');
 figure, imshow(read(vr, 1));
+line_select = imline;
+line = wait(line_select);
+%Determine angle of correction rotation.
+rotation_angle = 360 - (57.3 * atan((line(1,1) - line(2,1)) / (line(1,2) - line(2,2)) ) );
+%Determine number of pixels after rotation.
+%resolution = size(imrotate(read(vr, 1), rotation_angle));
+
+disp('Click and drag to define a rectangular region of interest, double-click to proceed.');
+figure, imshow(imrotate(read(vr, 1), rotation_angle ));
 ROI_select = imrect;
 ROI = wait(ROI_select); %ROI takes form of [xmin ymin width height]
 %close(figure) % doesnt work
@@ -64,6 +74,7 @@ while bg_step < bg_number
     bg_array(:,:,bg_step) = bg_frame;
 end 
 background =  uint8(mean(bg_array, 3));
+background = imrotate(background, rotation_angle);
 
 %% analyze each frame of the video and subtract background
 
@@ -73,7 +84,7 @@ disp('Calculating fly positions.');
 position_array = zeros(nfrm_movie,3);
 for nofr = 1:nfrm_movie
     % extract image from video
-    frame_gray = rgb2gray(read(vr, nofr));
+    frame_gray = rgb2gray(imrotate(read(vr, nofr), rotation_angle));
     
     %"subtract" background image using GIMP's image division layer mode
     %formula (TWICE!)

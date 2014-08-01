@@ -10,7 +10,7 @@
 
 % File list to load. Write the names of the files you want to load here in
 % a comma delimited list. THEY MUST ALL BE IN THE WORKING DIRECTORY OF THIS SCRIPT OR IT WONT WORK.
-file_list = {'tracker_out.csv'};
+file_list = {'double_test.csv'};
 
 % How long is the assay (in seconds)? If one of the csv files is shorter
 % than this, defaults to the shorter time.
@@ -35,7 +35,7 @@ disp('Loading files...');
 % array as long as there is video remaining. If video runs out of frames
 % for any replicate, chops length of all videos to minimum video length.
 total_frames = total_time * framerate;
-rep_combined = zeros(total_frames, 3, num_files);
+rep_combined = zeros(total_frames, 5, num_files);
 for index = 1:num_files
     replicate = csvread(char(file_list(index)));
     num_rows = size(replicate);
@@ -57,27 +57,39 @@ end
 
 % reshape rep_combined into reallllly long array
 array_size = size(rep_combined);
-rep_combined_lg = zeros(array_size(1) * num_files, 3);
+rep_combined_lg = zeros(array_size(1) * num_files, 5);
 if num_files == 1
     rep_combined_lg = rep_combined;
 else
     for dim = 1:array_size(3)
-    row = 1;
-    while row <= array_size(1)
-        rep_combined_lg(row + ((dim - 1) * array_size(1)),:) = rep_combined(row,:,dim);
-        row = row + 1;
-    end
+        row = 1;
+        while row <= array_size(1)
+            rep_combined_lg(row + ((dim - 1) * array_size(1)),:) = rep_combined(row,:,dim);
+            row = row + 1;
+        end
     end
 end
+% dumps fly 1 and fly 2 into a common array, comment this part out for only
+% bottom fly
+fly_combined = vertcat(rep_combined_lg(:,2:3), rep_combined_lg(:,4:5));
 
 % START BINNING!!! 
-% convert everything to 1mm wide "position coordinate" bins
-[xnum, xbins] = histc(rep_combined_lg(:,2), ...
-    linspace(min(rep_combined_lg(:,2)),max(rep_combined_lg(:,2)), 15));
-[ynum, ybins] = histc(rep_combined_lg(:,3), ...
-    linspace(min(rep_combined_lg(:,3)),max(rep_combined_lg(:,3)), 110));
+% convert everything to 1mm x 1mm "position coordinate" bins
+[xnum, xbins] = histc(fly_combined(:,1), ...
+    linspace(min(fly_combined(:,1)),max(fly_combined(:,1)), 15));
+[ynum, ybins] = histc(fly_combined(:,2), ...
+    linspace(min(fly_combined(:,2)),max(fly_combined(:,2)), 110));
 % bin on a per-"position coordinate" basis
 bin_matrix = full(sparse(ybins, xbins, 1));
+
+% old binning code... only difference is the indexing % START BINNING!!!
+% % convert everything to 1mm x 1mm "position coordinate" bins
+% [xnum, xbins] = histc(rep_combined_lg(:,2), ...
+%     linspace(min(rep_combined_lg(:,2)),max(rep_combined_lg(:,2)), 15));
+% [ynum, ybins] = histc(rep_combined_lg(:,3), ...
+%     linspace(min(rep_combined_lg(:,3)),max(rep_combined_lg(:,3)), 110));
+% % bin on a per-"position coordinate" basis
+% bin_matrix = full(sparse(ybins, xbins, 1));
 
 %% plot output
 

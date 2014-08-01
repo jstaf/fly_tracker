@@ -7,7 +7,6 @@
 % Known issues: 
 % -fly path is a little bit "jagged"
 % -fly can "teleport" if the script doesn't find it in a frame
-% -only one fly at the moment
 
 % Jeff Stafford
 
@@ -20,13 +19,15 @@ inner_diameter = 1.5;
 video_name = 'half_res.AVI';
 
 %do you want .csv output?
-output = false;
+output = true;
 %if so, what do you want it to be named?
-output_name = 'tracker_out2.csv';
-% key to output csv:
+output_name = 'double_test.csv';
+% key to output csv (fly 1 is on the bottom half of the vial):
 % column 1 = Time (in seconds)
 % column 2 = Fly 1 x position (in cm from left edge of furthest left ROI)
 % column 3 = Fly 1 y position (in cm from absolute top of vial)
+% column 4 = Fly 2 x position
+% column 5 = Fly 2 y position
 
 %% open video
 
@@ -39,19 +40,30 @@ nfrm_movie = floor(vr.Duration * vr.FrameRate);
 
 %Draw a line to calculate camera tilt.
 disp('Click and drag along the edge of the vial to correct for camera tilt, double-click to proceed.');
-figure, imshow(read(vr, 1));
+figure('name', 'Rotation correction'), imshow(read(vr, 1));
 line_select = imline;
 line = wait(line_select);
 %Determine angle of correction rotation.
 rotation_angle = 360 - (57.3 * atan((line(1,1) - line(2,1)) / (line(1,2) - line(2,2)) ) );
 %Determine number of pixels after rotation.
 %resolution = size(imrotate(read(vr, 1), rotation_angle));
+close gcf;
 
 disp('Click and drag to define a rectangular region of interest, double-click to proceed.');
-figure, imshow(imrotate(read(vr, 1), rotation_angle ));
+figure('name', 'ROI select'), imshow(imrotate(read(vr, 1), rotation_angle ));
 ROI_select = imrect;
 ROI = wait(ROI_select); %ROI takes form of [xmin ymin width height]
-%close(figure) % doesnt work
+close gcf; 
+
+%split into 2 ROIs, one for each fly
+total_height = top_half_height + bottom_half_height;
+ROI_top = ROI;
+ROI_top(4) = (top_half_height / total_height) * ROI_top(4);
+
+ROI_bottom = ROI;
+ROI_bottom(4) = (bottom_half_height / total_height) * ROI_bottom(4);
+ROI_bottom(2) = ROI_bottom(2) + ROI_top(4);
+
 disp('ROI selected, proceeding with video analysis.');
 
 
@@ -78,10 +90,11 @@ background = imrotate(background, rotation_angle);
 
 %% analyze each frame of the video and subtract background
 
-disp('Calculating fly positions.');
+disp('Calculating fly positions (this part takes awhile...).');
 
-%initialize array used to log position
-position_array = zeros(nfrm_movie,3);
+%initialize arrays used to log position
+bottom_array = zeros(nfrm_movie, 3);
+top_array = zeros(nfrm_movie, 3);
 for nofr = 1:nfrm_movie
     % extract image from video
     frame_gray = rgb2gray(imrotate(read(vr, nofr), rotation_angle));
@@ -91,41 +104,56 @@ for nofr = 1:nfrm_movie
     frame_gray = uint8((256 * double(frame_gray))./(double(background) + 1));
     frame_gray = uint8((256 * double(frame_gray))./(double(background) + 1));
     
-    %extract ROI
-    frame_crop = imcrop(frame_gray, ROI);
+    %Bottom ROI processing
+    frame_crop = imcrop(frame_gray, ROI_bottom);
 
-    %find darkest pixel on image and its coordinates... should be the fly!
+    %find darkest pixel on bottom ROI and its coordinates... should be the fly!
     minValue = min(frame_crop(:));
     [ypos, xpos] = find(frame_crop == minValue);
-    fr_position = [mean(xpos), mean(ypos), nofr];
-    position_array(nofr,:) = fr_position;
+    fr_position = [nofr, mean(xpos), mean(ypos)];
+    bottom_array(nofr,:) = fr_position;
+    
+    %Top ROI processing
+    frame_crop = imcrop(frame_gray, ROI_top);
+
+    minValue = min(frame_crop(:));
+    [ypos, xpos] = find(frame_crop == minValue);
+    fr_position = [nofr, mean(xpos), mean(ypos)];
+    top_array(nofr,:) = fr_position;
 end 
 %correct position coordinates for ROI operation
-position_array = [position_array(:,1) + ROI(1), ...
-    position_array(:,2) + ROI(2), ...
-    position_array(:,3)];
+position_array = [bottom_array(:,1), ...
+    bottom_array(:,2) + ROI_bottom(1), ...
+    bottom_array(:,3) + ROI_bottom(2), ...
+    top_array(:,2) + ROI_top(1), ...
+    top_array(:,3) + ROI_top(2)];
 
 %% process and output data
 
+disp('Creating output.');
+
 %Convert position coordinates to real, meaningful positions (coordinates in
 %cm and time in seconds. Scale is in cm/pixels. 
-xscale = inner_diameter / ROI(3);
-yscale_top = top_half_height / ROI(4); % need to change ROI for second fly
-yscale_bottom = bottom_half_height / ROI(4);
-corrected_array = [position_array(:,3)/vr.FrameRate, ...
-    (position_array(:,1) - ROI(1)) * xscale, ...
-    (position_array(:,2) - ROI(2)) * yscale_bottom,];
+xscale = inner_diameter / ROI_top(3);
 
-disp('Creating output.');
-plot(corrected_array(:,2), corrected_array(:,3) + 3)
+yscale_top = top_half_height / ROI_top(4); % need to change ROI for second fly
+yscale_bottom = bottom_half_height / ROI_bottom(4);
+
+%convert to coordinates in cm and frame number to seconds, add coordinate
+%offset for bottom fly
+corrected_array = [position_array(:,1)/vr.FrameRate, ...
+    (position_array(:,2) - ROI_bottom(1)) * xscale, ...
+    ((position_array(:,3) - ROI_bottom(2)) * yscale_bottom) + top_half_height, ...
+    (position_array(:,4) - ROI_top(1)) * xscale, ...
+    (position_array(:,5) - ROI_top(2)) * yscale_top];
+
+plot(corrected_array(:,2), corrected_array(:,3), ...
+    corrected_array(:,4), corrected_array(:,5))
 axis([0 inner_diameter 0 (bottom_half_height + top_half_height)])
 % inverts the y coordinates to match the video
 set(gca, 'Ydir', 'reverse')
 
 if output == true
-%     output_array = num2cell(corrected_array);
-%     output_array = vertcat( ...
-%     {'Time_s','Fly1_X_pos','Fly1_Y_pos'}, output_array);
     output_array = corrected_array; 
     csvwrite(output_name, output_array);
 end

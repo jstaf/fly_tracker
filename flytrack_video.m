@@ -14,16 +14,19 @@
 % Written by Jeff Stafford. Some code and ideas from Dan Valente's FTrack
 % suite were used, as well as the 'Division' layer mode formula from GIMP.
 
-%input dimensions of assay vial, units in cm
-top_half_height = 3;
-bottom_half_height = 8;
-inner_diameter = 1.5;
-
 %input video name here. MUST BE IN WORKING DIRECTORY OF THIS SCRIPT.
-video_name = 'IMGP0172.AVI';
+video_name = 'IMGP0174.AVI';
 
+% The size of the area you want to search (in pixels). 
 search_size = 20;
-threshold = 25;
+% The average pixel intensity must exceed this value to log a position and
+% NOT skip the frame. Prevents random noise and other weird stuff from
+% "becoming the fly."
+per_pixel_threshold = 2;
+% Do you want interpolation? If a frame is skipped, this will define a
+% fly's position as the average position between current last accepted
+% frame and the next accepted frame.
+interpolation = true;
 
 %do you want .csv output?
 output = false;
@@ -35,6 +38,12 @@ output_name = '174.csv';
 % column 3 = Fly 1 y position (in cm from absolute top of vial)
 % column 4 = Fly 2 x position
 % column 5 = Fly 2 y position
+
+% Default settings for dimensions of assay vial, units in cm. Only change
+% if you're using a different vial than normal.
+top_half_height = 3;
+bottom_half_height = 8;
+inner_diameter = 1.5;
 
 %% open video
 
@@ -57,12 +66,12 @@ rotation_angle = 360 - (57.3 * atan((line(1,1) - line(2,1)) / (line(1,2) - line(
 close gcf;
 
 disp('Click and drag to define a rectangular region of interest, double-click to proceed.');
-figure('name', 'ROI select'), imshow(imrotate(read(vr, 1), rotation_angle ));
+figure('name', 'ROI select'), imshow(imrotate(read(vr, 1), rotation_angle, 'bilinear'));
 ROI_select = imrect;
 ROI = wait(ROI_select); %ROI takes form of [xmin ymin width height]
 close gcf; 
 
-%split into 2 ROIs, on% add NaNs to array if fly is not founde for each fly
+%split into 2 ROIs, one for each fly
 total_height = top_half_height + bottom_half_height;
 ROI_top = ROI;
 ROI_top(4) = (top_half_height / total_height) * ROI_top(4);
@@ -71,21 +80,18 @@ ROI_bottom = ROI;
 ROI_bottom(4) = (bottom_half_height / total_height) * ROI_bottom(4);
 ROI_bottom(2) = ROI_bottom(2) + ROI_top(4);
 
-disp('ROI selected, proceeding with video analysis.');
-
-
 %% create a background
 
 disp('Calculating image background.');
 
-%pick a random set of 100 frames to create the background
+% Pick a random set of 100 frames to create the background.
 bg_number = 100;
 randv = rand(bg_number,1);
 bg_idx = sort(round(randv * nfrm_movie));
 %bg_idx = (1:bg_number);
 
-%read each frame of the background and average them to create a background
-%image
+% Read each frame of the background and average them to create a background
+% image.
 bg_array = zeros(resolution(2), resolution(1), bg_number, 'uint8');
 bg_step = 0;
 while bg_step < bg_number
@@ -94,11 +100,15 @@ while bg_step < bg_number
     bg_array(:,:,bg_step) = bg_frame;
 end 
 background =  uint8(mean(bg_array, 3));
-background = imrotate(background, rotation_angle);
+background = imrotate(background, rotation_angle, 'bilinear');
 
 %% analyze each frame of the video and subtract background
 
 disp('Calculating fly positions (this part takes awhile...).');
+
+% re-define search parameters to make sense regardless of size
+threshold = (search_size)^2 * per_pixel_threshold;
+search_size = round(search_size / 2);
 
 %initialize arrays used to log position
 bottom_array = zeros(nfrm_movie, 3);
@@ -107,93 +117,26 @@ top_array = zeros(nfrm_movie, 3);
 %process frames of video for fly
 for nofr = 1:nfrm_movie
     % extract image from video
-    frame_int = rgb2gray(imrotate(read(vr, nofr), rotation_angle));
+    frame_int = rgb2gray(imrotate(read(vr, nofr), rotation_angle, 'bilinear'));
          
     %"subtract" background image using GIMP's image division layer mode
     %formula (TWICE!)
     frame_subtracted = uint8((256 * double(frame_int))./(double(background) + 1));
-    frame_subtracted = uint8((256 * double(frame_subtracted))./(double(background) + 1));
+    %frame_subtracted = uint8((256 * double(frame_subtracted))./(double(background) + 1));
     
     %Bottom ROI processing
     frame_crop = imcrop(frame_subtracted, ROI_bottom);
-
-    %find darkest pixel on bottom ROI and its coordinates... should be the fly!
-    minValue = min(frame_crop(:));
-    [ypos, xpos] = find(frame_crop == minValue);
-    xpos = mean(xpos);
-    ypos = mean(ypos);
-        
-    % define 'excl' region in which the background is not updated
-    excl_leftEdge = int16(round(xpos) - search_size);
-    excl_rightEdge = int16(round(xpos) + search_size);
-    excl_topEdge = int16(round(ypos) - search_size);
-    excl_bottomEdge = int16(round(ypos) + search_size);
+    fr_position = flyFinder(frame_crop, search_size, threshold);
+    bottom_array(nofr,:) = horzcat(nofr, fr_position);
     
-%     excl_leftEdge = int16(round((xpos + ROI_bottom(1)) - search_size));
-%     excl_rightEdge = int16(round((xpos + ROI_bottom(1)) + search_size));
-%     excl_topEdge = int16(round((ypos + ROI_bottom(2)) - search_size));
-%     excl_bottomEdge = int16(round((ypos + ROI_bottom(2)) + search_size));
-    % make sure excl does not fall outside ROI bounds
-    if excl_leftEdge < 1
-        excl_leftEdge = 1;
-    end
-    if excl_rightEdge > ROI_bottom(3);
-        excl_rightEdge = ROI_bottom(3);
-    end
-    if excl_topEdge < 1
-        excl_topEdge = 1;
-    end
-    if excl_bottomEdge > ROI_bottom(4);
-        excl_bottomEdge = ROI_bottom(4);
-    end
-    
-%     if excl_leftEdge < ROI_bottom(1)
-%         excl_leftEdge = ROI_bottom(1);
-%     end
-%     if excl_rightEdge > ROI_bottom(1) + ROI_bottom(3);
-%         excl_rightEdge = ROI_bottom(1) + ROI_bottom(3);
-%     end
-%     if excl_topEdge < ROI_bottom(2)
-%         excl_topEdge = ROI_bottom(2);
-%     end
-%     if excl_bottomEdge > ROI_bottom(2) + ROI_bottom(4);
-%         excl_bottomEdge = ROI_bottom(2) + ROI_bottom(4);
-%     end
-    
-    bg_excl = [excl_leftEdge excl_rightEdge excl_topEdge excl_bottomEdge];
-    search_area = frame_crop(bg_excl(3):bg_excl(4), bg_excl(1):bg_excl(2));
-%     background = frame_int;
-%     background(bg_excl(1):bg_excl(2), bg_excl(3):bg_excl(4)) = search_area;
-    
-    %flip to be white pixels on black
-    fly_region = 255 - double(search_area);
-    fly_region = 255 - fly_region;
-    %FTRACK code
-    x2 = [1:length(fly_region(1,:))]';
-    y2 = [1:length(fly_region(:,1))]';
-    total = sum(sum(fly_region));
-    
-    % add x and y positions to array if pixel intensity (the fly) is above a
-    % certain threshold.
-    if total >= threshold
-        x = sum(fly_region*x2)/total+excl_leftEdge-1;
-        y = sum(fly_region'*y2)/total+excl_topEdge-1;
-        fr_position = [nofr, x, y];
-    else % add NaNs to array if fly is not found
-        fr_position = [nofr, NaN, NaN];
-    end
-    bottom_array(nofr,:) = fr_position;
-    
-%     %Top ROI processing
-%     frame_crop = imcrop(frame_subtracted, ROI_top);
-% 
-%     minValue = min(frame_crop(:));
-%     [ypos, xpos] = find(frame_crop == minValue);
-%     fr_position = [nofr, mean(xpos), mean(ypos)];
-%     top_array(nofr,:) = fr_position;
+    %Top ROI processing
+    frame_crop = imcrop(frame_subtracted, ROI_top);
+    fr_position = flyFinder(frame_crop, search_size, threshold);
+    top_array(nofr,:) = horzcat(nofr, fr_position);
 end
 
-%correct position coordinates for ROI operation
+% Correct position coordinates for ROI operation. Coordinates are now in
+% absolute, whole image coordinates (rather than ROI specific ones).
 position_array = [bottom_array(:,1), ...
     bottom_array(:,2) + ROI_bottom(1), ...
     bottom_array(:,3) + ROI_bottom(2), ...
@@ -219,6 +162,10 @@ corrected_array = [position_array(:,1)/vr.FrameRate, ...
     (position_array(:,4) - ROI_top(1)) * xscale, ...
     (position_array(:,5) - ROI_top(2)) * yscale_top];
 
+if interpolation == true
+   % does nothing right now 
+end
+
 plot(corrected_array(:,2), corrected_array(:,3), ...
     corrected_array(:,4), corrected_array(:,5))
 axis([0 inner_diameter 0 (bottom_half_height + top_half_height)])
@@ -226,7 +173,12 @@ axis([0 inner_diameter 0 (bottom_half_height + top_half_height)])
 set(gca, 'Ydir', 'reverse')
 
 skipped1 = sum(isnan(corrected_array(:,2)));
-disp(strcat(num2str(skipped1), ' frames were skipped out of ', num2str(length(corrected_array(:,2))), ' for fly 1.'));
+skipped2 = sum(isnan(corrected_array(:,4)));
+disp(strcat(num2str(skipped1), ' frames were skipped out of ' , ...
+    num2str(length(corrected_array(:,2))), ' for fly 1 (bottom).'));
+disp(strcat(num2str(skipped2), ' frames were skipped out of ' , ...
+    num2str(length(corrected_array(:,4))), ' for fly 2 (top).'));
+disp('Decrease the threshold if the number of skipped frames is too high.');
 
 if output == true
     output_array = corrected_array; 

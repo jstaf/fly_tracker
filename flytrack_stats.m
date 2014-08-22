@@ -10,14 +10,14 @@
 
 % File list to load. Write the names of the files you want to load here in
 % a comma delimited list. THEY MUST ALL BE IN THE WORKING DIRECTORY OF THIS SCRIPT OR IT WONT WORK.
-file_list = {'double_test.csv'};
+file_list = {'171.csv', '172.csv', '173.csv', '174.csv', '175.csv'};
 
 % How long is the assay (in seconds)? If one of the csv files is shorter
 % than this, defaults to the shorter time.
 total_time = 120;
 
 % What was your framerate? The Pentax cameras we use can capture at either 15 or 30 fps.
-framerate = 15;
+framerate = 30;
 
 %input dimensions of assay vial, units in cm
 top_half_height = 3;
@@ -94,6 +94,6 @@ bin_matrix = full(sparse(ybins, xbins, 1));
 %% plot output
 
 bin_matrix_flip = flipud(bin_matrix);
-heatmap = HeatMap(bin_matrix_flip, ...
-    'Colormap', 'gray' ...
+heatmap = HeatMap(log(bin_matrix_flip), ...
+    'Colormap', 'jet' ...
     );

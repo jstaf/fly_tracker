@@ -5,9 +5,6 @@
 % path of the fly. 
 
 % Known issues: 
-% -Fly path is a little bit "jagged." This is caused by limited camera
-% resolution and the image rotation correction. To reduce 'jaggedness,'
-% take straigter videos (at least until I implement per-image antialiasing).
 % -High numbers of skipped frames if fly just sits around for most of the
 % video.
 
@@ -22,7 +19,7 @@ search_size = 20;
 % The average pixel intensity must exceed this value to log a position and
 % NOT skip the frame. Prevents random noise and other weird stuff from
 % "becoming the fly."
-per_pixel_threshold = 2;
+per_pixel_threshold = 3.5;
 % Do you want interpolation? If a frame is skipped, this will define a
 % fly's position as the average position between current last accepted
 % frame and the next accepted frame.

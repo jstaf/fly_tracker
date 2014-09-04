@@ -4,7 +4,6 @@ fly_tracker
 A short little MATLAB script that tracks flies.
 
 To do list:
-+ Find a way to "smooth" fly path. 
-+ Create probability distribution and statistics.
++ Create probability distribution and statistics (probability key/legend for heatmap would be nice).
 + Create "teleportation filter" that excludes frames where the fly position teleports across the vial.
-+ Track second ROI and calculate distance between flies in both ROIs.
++ Improve background image subtraction. 

@@ -16,17 +16,19 @@ video_name = 'IMGP0174.AVI';
 
 % The size of the area you want to search (in pixels). 
 search_size = 20;
+
 % The average pixel intensity must exceed this value to log a position and
 % NOT skip the frame. Prevents random noise and other weird stuff from
 % "becoming the fly."
-per_pixel_threshold = 3.5;
+per_pixel_threshold = 3.5; % I recommend a value somewhere between 3 and 5.
+
 % Do you want interpolation? If a frame is skipped, this will define a
 % fly's position as the average position between current last accepted
 % frame and the next accepted frame.
 interpolation = true;
 
 %do you want .csv output?
-output = false;
+output = true;
 %if so, what do you want it to be named?
 output_name = '174.csv';
 % key to output csv (fly 1 is on the bottom half of the vial):

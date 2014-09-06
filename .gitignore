@@ -1,0 +1,10 @@
+*~
+*.AVI
+*.csv
+*.png
+ffmpeg
+ffprobe
+*.jpg
+*.mat
+old_flytrack.m
+

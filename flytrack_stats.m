@@ -10,7 +10,7 @@
 
 % File list to load. Write the names of the files you want to load here in
 % a comma delimited list. THEY MUST ALL BE IN THE WORKING DIRECTORY OF THIS SCRIPT OR IT WONT WORK.
-file_list = {'171.csv', '172.csv', '173.csv', '174.csv', '175.csv'};
+file_list = {'174.csv'};
 
 % How long is the assay (in seconds)? If one of the csv files is shorter
 % than this, defaults to the shorter time.
@@ -53,8 +53,6 @@ for index = 1:num_files
     end
 end
 
-%% bin positions from array
-
 % reshape rep_combined into reallllly long array
 array_size = size(rep_combined);
 rep_combined_lg = zeros(array_size(1) * num_files, 5);
@@ -69,27 +67,39 @@ else
         end
     end
 end
-% dumps fly 1 and fly 2 into a common array, comment this part out for only
-% bottom fly
+
+%% calculate interfly distance
+
+% calculate distance between flies for any given point where both positions
+% are NOT NaNs
+interfly_distance = zeros(size(rep_combined_lg, 1), 1);
+for row = 1:size(rep_combined_lg, 1)
+    interfly_distance(row,1) = pdist2(interfly_data(row,2:3), interfly_data(row,4:5));
+end
+interfly_idx = find(isnan(interfly_distance) == false);
+interfly_distance = interfly_distance(interfly_idx);
+
+% what's the farthest the flies can be apart? (rounded up)
+maxdist = ceil(pdist2([0,0],[inner_diameter, top_half_height + bottom_half_height]));
+
+
+%% bin positions for heatmapping
+
+% dump fly 1 and fly 2 into a common array, remove NaN's
 fly_combined = vertcat(rep_combined_lg(:,2:3), rep_combined_lg(:,4:5));
+fly_combined = fly_combined(isfinite(fly_combined(:,1)),:);
 
 % START BINNING!!! 
 % convert everything to 1mm x 1mm "position coordinate" bins
 [xnum, xbins] = histc(fly_combined(:,1), ...
-    linspace(min(fly_combined(:,1)),max(fly_combined(:,1)), 15));
+    linspace(min(fly_combined(:,1)),max(fly_combined(:,1)), inner_diameter * 10));
 [ynum, ybins] = histc(fly_combined(:,2), ...
-    linspace(min(fly_combined(:,2)),max(fly_combined(:,2)), 110));
+    linspace(min(fly_combined(:,2)),max(fly_combined(:,2)), (top_half_height ...
+    + bottom_half_height)*10 ));
 % bin on a per-"position coordinate" basis
 bin_matrix = full(sparse(ybins, xbins, 1));
 
-% old binning code... only difference is the indexing % START BINNING!!!
-% % convert everything to 1mm x 1mm "position coordinate" bins
-% [xnum, xbins] = histc(rep_combined_lg(:,2), ...
-%     linspace(min(rep_combined_lg(:,2)),max(rep_combined_lg(:,2)), 15));
-% [ynum, ybins] = histc(rep_combined_lg(:,3), ...
-%     linspace(min(rep_combined_lg(:,3)),max(rep_combined_lg(:,3)), 110));
-% % bin on a per-"position coordinate" basis
-% bin_matrix = full(sparse(ybins, xbins, 1));
+% add a conversion to actual probability and log10 it here
 
 %% plot output
 
@@ -97,3 +107,5 @@ bin_matrix_flip = flipud(bin_matrix);
 heatmap = HeatMap(log(bin_matrix_flip), ...
     'Colormap', 'jet' ...
     );
+
+% add a meaningful legend and get it to export at the same scale

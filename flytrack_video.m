@@ -19,7 +19,8 @@ search_size = 20;
 
 % The average pixel intensity must exceed this value to log a position and
 % NOT skip the frame. Prevents random noise and other weird stuff from
-% "becoming the fly."
+% "becoming the fly." Essentially requires any given blob it detects to be
+% above a certain size and intensity.
 per_pixel_threshold = 3.5; % I recommend a value somewhere between 3 and 5.
 
 % Do you want interpolation? If a frame is skipped, this will define a
@@ -134,14 +135,6 @@ for nofr = 1:nfrm_movie
     top_array(nofr,:) = horzcat(nofr, fr_position);
 end
 
-% Correct position coordinates for ROI operation. Coordinates are now in
-% absolute, whole image coordinates (rather than ROI specific ones).
-position_array = [bottom_array(:,1), ...
-    bottom_array(:,2) + ROI_bottom(1), ...
-    bottom_array(:,3) + ROI_bottom(2), ...
-    top_array(:,2) + ROI_top(1), ...
-    top_array(:,3) + ROI_top(2)];
-
 %% process and output data
 
 disp('Creating output.');
@@ -149,20 +142,65 @@ disp('Creating output.');
 %Convert position coordinates to real, meaningful positions (coordinates in
 %cm and time in seconds. Scale is in cm/pixels. 
 xscale = inner_diameter / ROI_top(3);
-
 yscale_top = top_half_height / ROI_top(4); % need to change ROI for second fly
 yscale_bottom = bottom_half_height / ROI_bottom(4);
 
 %convert to coordinates in cm and frame number to seconds, add coordinate
 %offset for bottom fly
-corrected_array = [position_array(:,1)/vr.FrameRate, ...
-    (position_array(:,2) - ROI_bottom(1)) * xscale, ...
-    ((position_array(:,3) - ROI_bottom(2)) * yscale_bottom) + top_half_height, ...
-    (position_array(:,4) - ROI_top(1)) * xscale, ...
-    (position_array(:,5) - ROI_top(2)) * yscale_top];
+corrected_array = [bottom_array(:,1)/vr.FrameRate, ...
+    bottom_array(:,2) * xscale, ...
+    (bottom_array(:,3) * yscale_bottom) + top_half_height, ...
+    top_array(:,2) * xscale, ...
+    top_array(:,3) * yscale_top];
 
+skipped1 = sum(isnan(corrected_array(:,2)));
+skipped2 = sum(isnan(corrected_array(:,4)));
+disp(strcat(num2str(skipped1), ' frames were skipped out of ' , ...
+    num2str(nfrm_movie), ' for fly 1 (bottom).'));
+disp(strcat(num2str(skipped2), ' frames were skipped out of ' , ...
+    num2str(nfrm_movie), ' for fly 2 (top).'));
+disp('Decrease the threshold if the number of skipped frames is too high.');
+
+% If interpolation == true (set in the settings section above) the script
+% will linearly interpolate the flies' position between points as long as
+% the fly doesn't move that much between frames.
 if interpolation == true
-   % does nothing right now 
+    %iterate through datapoints for all four position columns
+    interpolationNumber = 0;
+    for dim = 2:5
+        numPoint = 1;
+        while numPoint < nfrm_movie
+            point = corrected_array(numPoint,dim);
+            % If it encounters an NaN, find the last point that was not an NaN
+            % and the next point that is not an NaN.
+            if ((isnan(point) == true) && (numPoint ~= 1))
+                lastIdx = numPoint - 1;
+                lastPoint = corrected_array(lastIdx,dim);
+                nextIdx = find(~isnan(corrected_array(numPoint:nfrm_movie,dim)) ,1,'first') + numPoint - 1;
+                if isempty(nextIdx)
+                    break
+                end
+                nextPoint = corrected_array(nextIdx,dim);
+                diff = nextIdx - numPoint;
+                
+                % now replace the bad values
+                for badFrameNum =  1:diff
+                    corrected_array((lastIdx + badFrameNum),dim) = ...
+                        lastPoint + ( (nextPoint - lastPoint) * badFrameNum/(diff+1));
+                end
+                % Keep track of how many frames we've interpolated and skip
+                % to next non-NaN value.
+                interpolationNumber = interpolationNumber + diff;
+                numPoint = nextIdx;
+                
+            elseif ((isnan(point) == true) && (numPoint == 1))
+                numPoint = find(~isnan(corrected_array(:,dim)), 1,'first');
+            else
+                numPoint = numPoint + 1;
+            end
+        end
+    end
+    disp(strcat(num2str(interpolationNumber/2), ' frames recovered through interpolation.'))
 end
 
 plot(corrected_array(:,2), corrected_array(:,3), ...
@@ -171,21 +209,7 @@ axis([0 inner_diameter 0 (bottom_half_height + top_half_height)])
 % inverts the y coordinates to match the video
 set(gca, 'Ydir', 'reverse')
 
-skipped1 = sum(isnan(corrected_array(:,2)));
-skipped2 = sum(isnan(corrected_array(:,4)));
-disp(strcat(num2str(skipped1), ' frames were skipped out of ' , ...
-    num2str(length(corrected_array(:,2))), ' for fly 1 (bottom).'));
-disp(strcat(num2str(skipped2), ' frames were skipped out of ' , ...
-    num2str(length(corrected_array(:,4))), ' for fly 2 (top).'));
-disp('Decrease the threshold if the number of skipped frames is too high.');
-
 if output == true
     output_array = corrected_array; 
     csvwrite(output_name, output_array);
 end
-
-% old code to look at raw position within the image
-% plot(position_array(:,1), position_array(:,2))
-% axis([0 resolution(1) 0 resolution(2)])
-% % inverts the y coordinates to match the video
-% set(gca, 'Ydir', 'reverse')

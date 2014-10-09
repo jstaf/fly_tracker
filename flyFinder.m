@@ -55,3 +55,5 @@ if total >= threshold
 else % add NaNs to array if fly is not found.
     fr_position = [NaN, NaN];
 end
+
+return;

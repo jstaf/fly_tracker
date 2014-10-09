@@ -74,7 +74,7 @@ end
 % are NOT NaNs
 interfly_distance = zeros(size(rep_combined_lg, 1), 1);
 for row = 1:size(rep_combined_lg, 1)
-    interfly_distance(row,1) = pdist2(interfly_data(row,2:3), interfly_data(row,4:5));
+    interfly_distance(row,1) = pdist2(rep_combined_lg(row,2:3), rep_combined_lg(row,4:5));
 end
 interfly_idx = find(isnan(interfly_distance) == false);
 interfly_distance = interfly_distance(interfly_idx);

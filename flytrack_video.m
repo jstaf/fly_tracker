@@ -1,24 +1,19 @@
 %% initialize settings
 
 % A short script to open an image and calculate the position of a fruit fly
-% against a light background. Output graph is a sanity check for the
-% path of the fly. 
-
-% Known issues: 
-% -High numbers of skipped frames if fly just sits around for most of the
-% video.
-
-% Written by Jeff Stafford. Some code and ideas from Dan Valente's FTrack
-% suite were used, as well as the 'Division' layer mode formula from GIMP.
+% against a light background. Output graph is a sanity check for the path
+% of the fly. Written by Jeff Stafford. Some code and ideas from Dan
+% Valente's FTrack suite were used, as well as the 'Division' layer mode
+% formula from GIMP.
 
 % Input video name here. MUST BE IN WORKING DIRECTORY OF THIS SCRIPT.
-video_name = 'IMGP0174.AVI';
+video_name = 'IMGP0173.AVI';
 
 % Do you want .csv output?
 output = true;
 % If so, what do you want it to be named? WARNING: OVERWRITES OLD FILE
 % WITHOUT WARNING IF THEY HAVE THE SAME NAME!
-output_name = '174.csv';
+output_name = '173.csv';
 % Key to output csv (fly 1 is on the bottom half of the vial):
 % column 1 = Time (in seconds)
 % column 2 = Fly 1 x position (in cm from left edge of furthest left ROI)
@@ -32,13 +27,16 @@ search_size = 20;
 % The average pixel intensity in the search area must exceed this value to
 % log a position and NOT skip the frame. Prevents random noise and other
 % weird stuff from "becoming the fly." Essentially requires any given blob
-% it detects to be above a certain size and intensity. I recommend a value
-% somewhere between 3 and 5.
-per_pixel_threshold = 3.5;
+% it detects to be above a certain size and intensity. 
+per_pixel_threshold = 1.5;
 
-% Turn the "teleport filter" on? If position jumps a huge distance
-% suddenly, overwrites the offending frame(s) with NaNs.
+% Turn the "teleport filter" on? If the fly position jumps a huge distance
+% suddenly, the offending point is erased.
 teleportFilt = true;
+% The "huge distance" (in millimeters) that this filter checks for.
+teleDistThreshold = 0.2;
+% Number of frames before and after to use as a point of reference.
+numAvg = 5;
 
 % Do you want interpolation? If a frame is skipped, this will define a
 % fly's position as the average position between current last accepted
@@ -164,16 +162,13 @@ corrected_array = [bottom_array(:,1)/vr.FrameRate, ...
 
 skipped1 = sum(isnan(corrected_array(:,2)));
 skipped2 = sum(isnan(corrected_array(:,4)));
-disp(strcat(num2str(skipped1), ' frames were skipped out of ' , ...
+disp(strcat(num2str(skipped1), ' points were skipped out of ' , ...
     num2str(nfrm_movie), ' for fly 1 (bottom).'));
-disp(strcat(num2str(skipped2), ' frames were skipped out of ' , ...
+disp(strcat(num2str(skipped2), ' points were skipped out of ' , ...
     num2str(nfrm_movie), ' for fly 2 (top).'));
-disp('Decrease the threshold if the number of skipped frames is too high.');
 
 % Teleport filter. Removes spurious points where fly position teleports all
 % over the vial due to a false track.
-teleDistThreshold = 0.2;
-numAvg = 5;
 if teleportFilt == true
     teleFiltNum = 0;
     for dim = 2:2:4
@@ -242,7 +237,6 @@ if interpolation == true
                 
                 % Keep track of how many frames we've interpolated and skip
                 % to next non-NaN value.
-                
                 numPoint = nextIdx;
                 
             elseif ((isnan(point) == true) && (numPoint == 1))
@@ -254,6 +248,10 @@ if interpolation == true
     end
     disp(strcat(num2str(interpolationNumber), ' points recovered through interpolation.'))
 end
+
+skippedEnd = sum(isnan(corrected_array(:,[2,4])));
+disp(strcat('In total, ', num2str(skippedEnd), ' points were not recorded out of ' , ...
+    num2str(nfrm_movie * 2), ' points in the video.'));
 
 plot(corrected_array(:,2), corrected_array(:,3), ...
     corrected_array(:,4), corrected_array(:,5))

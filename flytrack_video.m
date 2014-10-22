@@ -11,33 +11,42 @@
 % Written by Jeff Stafford. Some code and ideas from Dan Valente's FTrack
 % suite were used, as well as the 'Division' layer mode formula from GIMP.
 
-%input video name here. MUST BE IN WORKING DIRECTORY OF THIS SCRIPT.
+% Input video name here. MUST BE IN WORKING DIRECTORY OF THIS SCRIPT.
 video_name = 'IMGP0174.AVI';
+
+% Do you want .csv output?
+output = true;
+% If so, what do you want it to be named? WARNING: OVERWRITES OLD FILE
+% WITHOUT WARNING IF THEY HAVE THE SAME NAME!
+output_name = '174.csv';
+% Key to output csv (fly 1 is on the bottom half of the vial):
+% column 1 = Time (in seconds)
+% column 2 = Fly 1 x position (in cm from left edge of furthest left ROI)
+% column 3 = Fly 1 y position (in cm from absolute top of ROI)
+% column 4 = Fly 2 x position
+% column 5 = Fly 2 y position
 
 % The size of the area you want to search (in pixels). 
 search_size = 20;
 
-% The average pixel intensity must exceed this value to log a position and
-% NOT skip the frame. Prevents random noise and other weird stuff from
-% "becoming the fly." Essentially requires any given blob it detects to be
-% above a certain size and intensity.
-per_pixel_threshold = 3.5; % I recommend a value somewhere between 3 and 5.
+% The average pixel intensity in the search area must exceed this value to
+% log a position and NOT skip the frame. Prevents random noise and other
+% weird stuff from "becoming the fly." Essentially requires any given blob
+% it detects to be above a certain size and intensity. I recommend a value
+% somewhere between 3 and 5.
+per_pixel_threshold = 3.5;
+
+% Turn the "teleport filter" on? If position jumps a huge distance
+% suddenly, overwrites the offending frame(s) with NaNs.
+teleportFilt = true;
 
 % Do you want interpolation? If a frame is skipped, this will define a
 % fly's position as the average position between current last accepted
-% frame and the next accepted frame.
+% frame and the next "real" frame.
 interpolation = true;
-
-%do you want .csv output?
-output = true;
-%if so, what do you want it to be named?
-output_name = '174.csv';
-% key to output csv (fly 1 is on the bottom half of the vial):
-% column 1 = Time (in seconds)
-% column 2 = Fly 1 x position (in cm from left edge of furthest left ROI)
-% column 3 = Fly 1 y position (in cm from absolute top of vial)
-% column 4 = Fly 2 x position
-% column 5 = Fly 2 y position
+% This is the maximum distance a fly can move and allow interpolation. The
+% default is 0.1 (1 millimeter).
+interDistThreshold = 0.1; 
 
 % Default settings for dimensions of assay vial, units in cm. Only change
 % if you're using a different vial than normal.
@@ -161,13 +170,50 @@ disp(strcat(num2str(skipped2), ' frames were skipped out of ' , ...
     num2str(nfrm_movie), ' for fly 2 (top).'));
 disp('Decrease the threshold if the number of skipped frames is too high.');
 
+% Teleport filter. Removes spurious points where fly position teleports all
+% over the vial due to a false track.
+teleDistThreshold = 0.2;
+numAvg = 5;
+if teleportFilt == true
+    teleFiltNum = 0;
+    for dim = 2:2:4
+        for numPoint = (numAvg+1):(nfrm_movie-numAvg)
+            point = corrected_array(numPoint, dim:(dim+1));
+            if isnan(point) == true
+                continue
+            else
+                % Compute mean positions for last and next numAvg frames.
+                lastSet = corrected_array((numPoint - numAvg):(numPoint-1), dim:(dim+1));
+                lastSet = lastSet(~isnan(lastSet));
+                lastMean = mean(reshape(lastSet, ...
+                    [length(lastSet)/2, 2]), 1);
+                nextSet = corrected_array((numPoint - numAvg):(numPoint-1), dim:(dim+1));
+                nextSet = nextSet(~isnan(nextSet));
+                nextMean = mean(reshape(nextSet, ...
+                    [length(nextSet)/2, 2]), 1);
+                
+                % If the fly distance between current and next/last mean
+                % positions suddenly moves more than the threshold, remove
+                % that point.
+                if ((pdist2(point,lastMean) > teleDistThreshold) || ...
+                    (pdist2(point,nextMean) > teleDistThreshold))
+                    corrected_array(numPoint, dim:(dim+1)) = NaN;
+                    teleFiltNum = teleFiltNum + 1;
+                end
+            end
+        end
+    end
+    disp(strcat(num2str(teleFiltNum), ' points removed by the telportation filter.'))
+end
+
+% Interpolation
 % If interpolation == true (set in the settings section above) the script
 % will linearly interpolate the flies' position between points as long as
-% the fly doesn't move that much between frames.
+% the fly doesn't move that much (interDistThreshold) between frames.
 if interpolation == true
     %iterate through datapoints for all four position columns
     interpolationNumber = 0;
-    for dim = 2:5
+    for dim = 2:2:4
         numPoint = 1;
         while numPoint < nfrm_movie
             point = corrected_array(numPoint,dim);
@@ -175,22 +221,28 @@ if interpolation == true
             % and the next point that is not an NaN.
             if ((isnan(point) == true) && (numPoint ~= 1))
                 lastIdx = numPoint - 1;
-                lastPoint = corrected_array(lastIdx,dim);
+                lastPoint = corrected_array(lastIdx,dim:(dim+1));
                 nextIdx = find(~isnan(corrected_array(numPoint:nfrm_movie,dim)) ,1,'first') + numPoint - 1;
                 if isempty(nextIdx)
                     break
                 end
-                nextPoint = corrected_array(nextIdx,dim);
+                nextPoint = corrected_array(nextIdx,dim:(dim+1));
                 diff = nextIdx - numPoint;
                 
-                % now replace the bad values
-                for badFrameNum =  1:diff
-                    corrected_array((lastIdx + badFrameNum),dim) = ...
-                        lastPoint + ( (nextPoint - lastPoint) * badFrameNum/(diff+1));
+                %check to make sure that the values aren't too far apart to
+                %interpolate, then replace bad values!
+                interPDist = pdist2(lastPoint,nextPoint);
+                if interPDist <= interDistThreshold
+                    for badFrameNum =  1:diff
+                        corrected_array((lastIdx + badFrameNum),dim:(dim+1)) = ...
+                            lastPoint + ( (nextPoint - lastPoint) * badFrameNum/(diff+1));
+                    end
+                    interpolationNumber = interpolationNumber + diff;
                 end
+                
                 % Keep track of how many frames we've interpolated and skip
                 % to next non-NaN value.
-                interpolationNumber = interpolationNumber + diff;
+                
                 numPoint = nextIdx;
                 
             elseif ((isnan(point) == true) && (numPoint == 1))
@@ -200,7 +252,7 @@ if interpolation == true
             end
         end
     end
-    disp(strcat(num2str(interpolationNumber/2), ' frames recovered through interpolation.'))
+    disp(strcat(num2str(interpolationNumber), ' points recovered through interpolation.'))
 end
 
 plot(corrected_array(:,2), corrected_array(:,3), ...

@@ -10,7 +10,7 @@
 
 % File list to load. Write the names of the files you want to load here in
 % a comma delimited list. THEY MUST ALL BE IN THE WORKING DIRECTORY OF THIS SCRIPT OR IT WONT WORK.
-file_list = {'174.csv'};
+file_list = {'171.csv', '172.csv', '173.csv', '174.csv', '175.csv', 'half_res.csv'};
 
 % How long is the assay (in seconds)? If one of the csv files is shorter
 % than this, defaults to the shorter time.
@@ -90,12 +90,12 @@ fly_combined = vertcat(rep_combined_lg(:,2:3), rep_combined_lg(:,4:5));
 fly_combined = fly_combined(isfinite(fly_combined(:,1)),:);
 
 % START BINNING!!! 
+total_height = top_half_height + bottom_half_height;
 % convert everything to 1mm x 1mm "position coordinate" bins
 [xnum, xbins] = histc(fly_combined(:,1), ...
     linspace(min(fly_combined(:,1)),max(fly_combined(:,1)), inner_diameter * 10));
 [ynum, ybins] = histc(fly_combined(:,2), ...
-    linspace(min(fly_combined(:,2)),max(fly_combined(:,2)), (top_half_height ...
-    + bottom_half_height)*10 ));
+    linspace(min(fly_combined(:,2)),max(fly_combined(:,2)), total_height*10 ));
 % bin on a per-"position coordinate" basis
 bin_matrix = full(sparse(ybins, xbins, 1));
 
@@ -103,9 +103,8 @@ bin_matrix = full(sparse(ybins, xbins, 1));
 
 %% plot output
 
-bin_matrix_flip = flipud(bin_matrix);
-heatmap = HeatMap(log(bin_matrix_flip), ...
-    'Colormap', 'jet' ...
-    );
+heatXLab = 0.1:0.1:inner_diameter;
+heatYLab = 0.1:0.1:total_height;
 
-% add a meaningful legend and get it to export at the same scale
+posMap = heatmap(log(bin_matrix), heatXLab, heatYLab, [], ...
+    'Colormap', 'hot', 'Colorbar', true);

@@ -7,13 +7,13 @@
 % formula from GIMP.
 
 % Input video name here. MUST BE IN WORKING DIRECTORY OF THIS SCRIPT.
-video_name = 'IMGP0173.AVI';
+video_name = 'half_res.AVI';
 
 % Do you want .csv output?
 output = true;
 % If so, what do you want it to be named? WARNING: OVERWRITES OLD FILE
 % WITHOUT WARNING IF THEY HAVE THE SAME NAME!
-output_name = '173.csv';
+output_name = 'half_res.csv';
 % Key to output csv (fly 1 is on the bottom half of the vial):
 % column 1 = Time (in seconds)
 % column 2 = Fly 1 x position (in cm from left edge of furthest left ROI)
@@ -34,7 +34,8 @@ per_pixel_threshold = 1.5;
 % suddenly, the offending point is erased.
 teleportFilt = true;
 % The "huge distance" (in millimeters) that this filter checks for.
-teleDistThreshold = 0.2;
+% Increase this number if the the program is skipping too many points.
+teleDistThreshold = 0.25;
 % Number of frames before and after to use as a point of reference.
 numAvg = 5;
 
@@ -123,13 +124,11 @@ top_array = zeros(nfrm_movie, 3);
 
 %process frames of video for fly
 for nofr = 1:nfrm_movie
-    % extract image from video
+    % Extract image from video.
     frame_int = rgb2gray(imrotate(read(vr, nofr), rotation_angle, 'bilinear'));
          
-    %"subtract" background image using GIMP's image division layer mode
-    %formula (TWICE!)
+    % Subtract image background using GIMP's image division formula.
     frame_subtracted = uint8((256 * double(frame_int))./(double(background) + 1));
-    %frame_subtracted = uint8((256 * double(frame_subtracted))./(double(background) + 1));
     
     %Bottom ROI processing
     frame_crop = imcrop(frame_subtracted, ROI_bottom);
@@ -250,12 +249,15 @@ if interpolation == true
 end
 
 skippedEnd = sum(isnan(corrected_array(:,[2,4])));
-disp(strcat('In total, ', num2str(skippedEnd), ' points were not recorded out of ' , ...
+disp(strcat('In total,', num2str(skippedEnd), ' points were not recorded out of ' , ...
     num2str(nfrm_movie * 2), ' points in the video.'));
 
 plot(corrected_array(:,2), corrected_array(:,3), ...
     corrected_array(:,4), corrected_array(:,5))
-axis([0 inner_diameter 0 (bottom_half_height + top_half_height)])
+axis([0 inner_diameter 0 (bottom_half_height + top_half_height)], 'equal', 'manual')
+xlabel('X coordinate (cm)', 'fontsize', 11)
+ylabel('Y coordinate (cm)', 'fontsize', 11)
+legend('Fly 1 (bottom)', 'Fly 2 (top)', 'location', 'southoutside')
 % inverts the y coordinates to match the video
 set(gca, 'Ydir', 'reverse')
 

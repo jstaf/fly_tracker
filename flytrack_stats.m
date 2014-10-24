@@ -114,14 +114,14 @@ bin_matrix = full(sparse(ybins, xbins, 1));
 
 % now convert to log(probability)
 total_binCount = sum(sum(bin_matrix));
-bin_matrix = log(bin_matrix/total_binCount);
+probMatrix = log(bin_matrix/total_binCount);
 
 %% plot heatmap
 
 heatXLab = 0.1:0.1:inner_diameter;
 heatYLab = 0.1:0.1:total_height;
 
-posMap = heatmap(bin_matrix, heatXLab, heatYLab, [], ...
+posMap = heatmap(probMatrix, heatXLab, heatYLab, [], ...
     'Colormap', 'hot', 'Colorbar', true);
 axis('equal', 'manual')
 xlabel('X-coordinate (cm)', 'fontsize', 11)

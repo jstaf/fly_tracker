@@ -1,3 +1,5 @@
+function [corrected_array] = flytrack_video_fn(video_name, output_name)
+
 %% initialize settings
 
 % A short script to open an image and calculate the position of a fruit fly
@@ -7,13 +9,14 @@
 % formula from GIMP.
 
 % Input video name here. MUST BE IN WORKING DIRECTORY OF THIS SCRIPT.
-video_name = 'half_res.AVI';
+%video_name = 'half_res.AVI';
 
 % Do you want .csv output?
 output = true;
 % If so, what do you want it to be named? WARNING: OVERWRITES OLD FILE
 % WITHOUT WARNING IF THEY HAVE THE SAME NAME!
-output_name = 'half_res.csv';
+%output_name = 'half_res.csv';
+
 % Key to output csv (fly 1 is on the bottom half of the vial):
 % column 1 = Time (in seconds)
 % column 2 = Fly 1 x position (in cm from left edge of furthest left ROI)
@@ -265,3 +268,5 @@ if output == true
     output_array = corrected_array; 
     csvwrite(output_name, output_array);
 end
+
+return;

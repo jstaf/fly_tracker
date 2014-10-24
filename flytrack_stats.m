@@ -106,9 +106,9 @@ fly_combined = fly_combined(isfinite(fly_combined(:,1)),:);
 % START BINNING!!! 
 % convert everything to 1mm x 1mm "position coordinate" bins
 [xnum, xbins] = histc(fly_combined(:,1), ...
-    linspace(min(fly_combined(:,1)),max(fly_combined(:,1)), inner_diameter * 10));
+    linspace(0,inner_diameter, inner_diameter * 10));
 [ynum, ybins] = histc(fly_combined(:,2), ...
-    linspace(min(fly_combined(:,2)),max(fly_combined(:,2)), total_height*10 ));
+    linspace(0,total_height, total_height*10 ));
 % bin on a per-"position coordinate" basis
 bin_matrix = full(sparse(ybins, xbins, 1));
 
@@ -123,3 +123,6 @@ heatYLab = 0.1:0.1:total_height;
 
 posMap = heatmap(bin_matrix, heatXLab, heatYLab, [], ...
     'Colormap', 'hot', 'Colorbar', true);
+axis('equal', 'manual')
+xlabel('X-coordinate (cm)', 'fontsize', 11)
+ylabel('Y-coordinate (cm)', 'fontsize', 11)

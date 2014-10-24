@@ -82,6 +82,9 @@ interfly_distance = interfly_distance(interfly_idx);
 % what's the farthest the flies can be apart? (rounded up)
 maxdist = ceil(pdist2([0,0],[inner_diameter, top_half_height + bottom_half_height]));
 
+%% plot interfly distance
+
+
 
 %% bin positions for heatmapping
 
@@ -99,12 +102,14 @@ total_height = top_half_height + bottom_half_height;
 % bin on a per-"position coordinate" basis
 bin_matrix = full(sparse(ybins, xbins, 1));
 
-% add a conversion to actual probability and log10 it here
+% now convert to log(probability)
+total_binCount = sum(sum(bin_matrix));
+bin_matrix = log(bin_matrix/total_binCount);
 
-%% plot output
+%% plot heatmap
 
 heatXLab = 0.1:0.1:inner_diameter;
 heatYLab = 0.1:0.1:total_height;
 
-posMap = heatmap(log(bin_matrix), heatXLab, heatYLab, [], ...
+posMap = heatmap(bin_matrix, heatXLab, heatYLab, [], ...
     'Colormap', 'hot', 'Colorbar', true);

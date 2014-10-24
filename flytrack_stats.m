@@ -24,6 +24,8 @@ top_half_height = 3;
 bottom_half_height = 8;
 inner_diameter = 1.5;
 
+total_height = top_half_height + bottom_half_height;
+
 %% read files and assemble into array
 
 num_files = size(file_list);
@@ -79,12 +81,21 @@ end
 interfly_idx = find(isnan(interfly_distance) == false);
 interfly_distance = interfly_distance(interfly_idx);
 
-% what's the farthest the flies can be apart? (rounded up)
-maxdist = ceil(pdist2([0,0],[inner_diameter, top_half_height + bottom_half_height]));
 
 %% plot interfly distance
 
+% what's the farthest the flies can be apart?
+maxdist = sqrt(total_height^2 + inner_diameter^2);
 
+% bin interfly distance for all replicates
+% [distNum, distBins] = histc(interfly_distance, ...
+%     linspace(0,maxdist, maxdist*10));
+[distNum, distBins] = histc(interfly_distance, ...
+    linspace(0,maxdist, maxdist*10));
+distNum = distNum/length(interfly_distance);
+plot(distNum);
+xlabel('Interfly distance (cm)', 'fontsize', 11);
+ylabel('Probability', 'fontsize', 11);
 
 %% bin positions for heatmapping
 
@@ -93,7 +104,6 @@ fly_combined = vertcat(rep_combined_lg(:,2:3), rep_combined_lg(:,4:5));
 fly_combined = fly_combined(isfinite(fly_combined(:,1)),:);
 
 % START BINNING!!! 
-total_height = top_half_height + bottom_half_height;
 % convert everything to 1mm x 1mm "position coordinate" bins
 [xnum, xbins] = histc(fly_combined(:,1), ...
     linspace(min(fly_combined(:,1)),max(fly_combined(:,1)), inner_diameter * 10));

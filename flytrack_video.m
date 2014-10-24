@@ -255,8 +255,8 @@ disp(strcat('In total,', num2str(skippedEnd), ' points were not recorded out of 
 plot(corrected_array(:,2), corrected_array(:,3), ...
     corrected_array(:,4), corrected_array(:,5))
 axis([0 inner_diameter 0 (bottom_half_height + top_half_height)], 'equal', 'manual')
-xlabel('X coordinate (cm)', 'fontsize', 11)
-ylabel('Y coordinate (cm)', 'fontsize', 11)
+xlabel('X-coordinate (cm)', 'fontsize', 11)
+ylabel('Y-coordinate (cm)', 'fontsize', 11)
 legend('Fly 1 (bottom)', 'Fly 2 (top)', 'location', 'southoutside')
 % inverts the y coordinates to match the video
 set(gca, 'Ydir', 'reverse')

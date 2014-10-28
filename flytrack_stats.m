@@ -84,6 +84,8 @@ interfly_distance = interfly_distance(interfly_idx);
 
 %% plot interfly distance
 
+figure('Name', 'Interfly Distance');
+
 % what's the farthest the flies can be apart?
 maxdist = sqrt(total_height^2 + inner_diameter^2);
 
@@ -94,7 +96,7 @@ maxdist = sqrt(total_height^2 + inner_diameter^2);
     linspace(0,maxdist, maxdist*10));
 distNum = distNum/length(interfly_distance);
 plot(distNum);
-xlabel('Interfly distance (cm)', 'fontsize', 11);
+xlabel('Interfly distance (mm)', 'fontsize', 11);
 ylabel('Probability', 'fontsize', 11);
 
 %% bin positions for heatmapping
@@ -117,6 +119,8 @@ total_binCount = sum(sum(bin_matrix));
 probMatrix = log(bin_matrix/total_binCount);
 
 %% plot heatmap
+
+figure('Name', 'Position heatmap');
 
 heatXLab = 0.1:0.1:inner_diameter;
 heatYLab = 0.1:0.1:total_height;

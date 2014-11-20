@@ -70,7 +70,17 @@ else
     end
 end
 
-%% calculate interfly distance
+%% calculate interfly distance for individual video replicates
+
+interfly_distanceRep = zeros([size(rep_combined, 1), size(rep_combined, 3)]);
+for dim = 1:size(rep_combined, 3)
+    for row = 1:size(rep_combined, 1)
+        interfly_distanceRep(row,dim) = pdist2(rep_combined(row,2:3,dim), rep_combined(row,4:5,dim));
+    end
+end
+csvwrite('test.csv', interfly_distanceRep);    
+    
+%% calculate interfly distance for combined data
 
 % calculate distance between flies for any given point where both positions
 % are NOT NaNs
@@ -86,15 +96,15 @@ interfly_distance = interfly_distance(interfly_idx);
 
 figure('Name', 'Interfly Distance');
 
-% what's the farthest the flies can be apart?
-maxdist = sqrt(total_height^2 + inner_diameter^2);
+% what's the farthest the flies can be apart? Rounded up to nearest
+% millimeter.
+maxdist = ceil(sqrt(total_height^2 + inner_diameter^2)*10)/10;
+binDefinition = linspace(0,maxdist, maxdist*10)';
 
 % bin interfly distance for all replicates
-% [distNum, distBins] = histc(interfly_distance, ...
-%     linspace(0,maxdist, maxdist*10));
-[distNum, distBins] = histc(interfly_distance, ...
-    linspace(0,maxdist, maxdist*10));
+[distNum, distBins] = histc(interfly_distance, binDefinition);
 distNum = distNum/length(interfly_distance);
+interflyDistanceData = [binDefinition, distNum];
 plot(distNum);
 xlabel('Interfly distance (mm)', 'fontsize', 11);
 ylabel('Probability', 'fontsize', 11);

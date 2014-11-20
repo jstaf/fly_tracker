@@ -13,7 +13,7 @@ video_name = 'half_res.AVI';
 output = true;
 % If so, what do you want it to be named? WARNING: OVERWRITES OLD FILE
 % WITHOUT WARNING IF THEY HAVE THE SAME NAME!
-output_name = 'half_res.csv';
+output_name = 'test.csv';
 % Key to output csv (fly 1 is on the bottom half of the vial):
 % column 1 = Time (in seconds)
 % column 2 = Fly 1 x position (in cm from left edge of furthest left ROI)
@@ -28,11 +28,11 @@ search_size = 20;
 % log a position and NOT skip the frame. Prevents random noise and other
 % weird stuff from "becoming the fly." Essentially requires any given blob
 % it detects to be above a certain size and intensity. 
-per_pixel_threshold = 1.5;
+per_pixel_threshold = 1;
 
 % Turn the "teleport filter" on? If the fly position jumps a huge distance
 % suddenly, the offending point is erased.
-teleportFilt = true;
+teleportFilt = false;
 % The "huge distance" (in millimeters) that this filter checks for.
 % Increase this number if the the program is skipping too many points.
 teleDistThreshold = 0.25;

@@ -8,7 +8,7 @@ inputFiles = {'test.csv', 'test_short.csv', 'test_long.csv'};
 
 % This is the 'distance threshold' that you are examining (measured in cm). 
 % This script calculates what fraction of time the interfly distance was below this threshold.
-distThresh = 6;
+distThresh = 0.5;
 
 %% read the files, calculate time interfly disance is within a certain 'distThresh' of each other.
 

@@ -5,12 +5,16 @@
 
 % Jeff Stafford
 
-% Known issues:
-% -the heatmap needs to be prettier, much prettier...
-
 % File list to load. Write the names of the files you want to load here in
-% a comma delimited list. THEY MUST ALL BE IN THE WORKING DIRECTORY OF THIS SCRIPT OR IT WONT WORK.
+% a comma delimited list. THEY MUST ALL BE IN THE WORKING DIRECTORY OF THIS
+% SCRIPT OR IT WON'T WORK AND YOU WILL BE SAD.
 file_list = {'171.csv', '172.csv', '173.csv', '174.csv', '175.csv', 'half_res.csv'};
+interflyDistanceFilename = 'name your file here.csv';
+
+% Is a fly missing from either the top or bottom? Used as a "no fly"
+% control. Type 'top' if the top fly is missing, and 'bottom' if the bottom
+% fly is missing. You can type absolute gibberish otherwise.
+noFly = 'Change this string for a "no fly" control.';
 
 % How long is the assay (in seconds)? If one of the csv files is shorter
 % than this, defaults to the shorter time.
@@ -75,22 +79,23 @@ end
 interfly_distanceRep = zeros([size(rep_combined, 1), size(rep_combined, 3)]);
 for dim = 1:size(rep_combined, 3)
     for row = 1:size(rep_combined, 1)
-        interfly_distanceRep(row,dim) = pdist2(rep_combined(row,2:3,dim), rep_combined(row,4:5,dim));
+        if strcmp(noFly,'top')
+            interfly_distanceRep(row,dim) = pdist2(rep_combined(row,2:3,dim), [inner_diameter/2, top_half_height]);
+        elseif strcmp(noFly,'bottom')
+            interfly_distanceRep(row,dim) = pdist2([inner_diameter/2, top_half_height], rep_combined(row,4:5,dim));
+        else
+            interfly_distanceRep(row,dim) = pdist2(rep_combined(row,2:3,dim), rep_combined(row,4:5,dim));
+        end
     end
 end
-csvwrite('test.csv', interfly_distanceRep);    
-    
-%% calculate interfly distance for combined data
+% Write a file with the interfly distance for each replicate. 
+csvwrite(interflyDistanceFilename, interfly_distanceRep);    
 
-% calculate distance between flies for any given point where both positions
-% are NOT NaNs
-interfly_distance = zeros(size(rep_combined_lg, 1), 1);
-for row = 1:size(rep_combined_lg, 1)
-    interfly_distance(row,1) = pdist2(rep_combined_lg(row,2:3), rep_combined_lg(row,4:5));
-end
+% Reshape into a long array for plotting.
+numRows = size(interfly_distanceRep,1)*size(interfly_distanceRep,2);
+interfly_distance = reshape(interfly_distanceRep,numRows,1);
 interfly_idx = find(isnan(interfly_distance) == false);
 interfly_distance = interfly_distance(interfly_idx);
-
 
 %% plot interfly distance
 

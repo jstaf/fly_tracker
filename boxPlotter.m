@@ -6,19 +6,20 @@
 % Load interfly distance files.
 inputFiles = {'test.csv', 'test_short.csv', 'test_long.csv'};
 
+% This is the 'distance threshold' that you are examining. This script
+% calculates how much time the interfly distance was below this distance.
 distThresh = 6;
-
-num_files = length(inputFiles);
-disp(strcat(num2str(num_files), ' files selected for analysis.'));
 
 %% read the files, calculate time interfly disance is within a certain 'distThresh' of each other.
 
-disp('Loading files...');
 %read file and calculate stats for each...
+num_files = length(inputFiles);
 plotData = zeros(100,num_files);
 plotData(:,:) = NaN;
 for fileNum = 1:num_files
     rep_new = csvread(char(inputFiles(fileNum)));
+    %nan_idx = find(isnan(rep_new) == false);
+    %rep_new = rep_new(nan_idx);
     within_thresh = zeros(size(rep_new));
     for row = 1:size(rep_new,1)
         for col = 1:size(rep_new,2)

@@ -8,13 +8,13 @@
 % File list to load. Write the names of the files you want to load here in
 % a comma delimited list. THEY MUST ALL BE IN THE WORKING DIRECTORY OF THIS
 % SCRIPT OR IT WON'T WORK AND YOU WILL BE SAD.
-file_list = {'171.csv', '172.csv', '173.csv', '174.csv', '175.csv', 'half_res.csv'};
+file_list = {'WTmale4_nofly1_nov23.csv'};
 interflyDistanceFilename = 'name your file here.csv';
 
 % Is a fly missing from either the top or bottom? Used as a "no fly"
 % control. Type 'top' if the top fly is missing, and 'bottom' if the bottom
 % fly is missing. You can type absolute gibberish otherwise.
-noFly = 'Change this string for a "no fly" control.';
+noFly = 'top';
 
 % How long is the assay (in seconds)? If one of the csv files is shorter
 % than this, defaults to the shorter time.
@@ -91,7 +91,8 @@ end
 % Write a file with the interfly distance for each replicate. 
 csvwrite(interflyDistanceFilename, interfly_distanceRep);    
 
-% Reshape into a long array for plotting.
+% Reshape into a long array for plotting. numRows also can be used for the
+% total number of points being analyzed.
 numRows = size(interfly_distanceRep,1)*size(interfly_distanceRep,2);
 interfly_distance = reshape(interfly_distanceRep,numRows,1);
 interfly_idx = find(isnan(interfly_distance) == false);
@@ -108,7 +109,7 @@ binDefinition = linspace(0,maxdist, maxdist*10)';
 
 % bin interfly distance for all replicates
 [distNum, distBins] = histc(interfly_distance, binDefinition);
-distNum = distNum/length(interfly_distance);
+distNum = distNum/numRows;
 interflyDistanceData = [binDefinition, distNum];
 plot(distNum);
 xlabel('Interfly distance (mm)', 'fontsize', 11);
@@ -120,6 +121,12 @@ ylabel('Probability', 'fontsize', 11);
 fly_combined = vertcat(rep_combined_lg(:,2:3), rep_combined_lg(:,4:5));
 fly_combined = fly_combined(isfinite(fly_combined(:,1)),:);
 
+% all coordinates exceeding vial bounds are reduced to what is actually possible within the vial.
+if (any(fly_combined(:,2) > 11))
+   fly_combined(find(fly_combined(:,2) > 11),2) = 11; 
+end
+
+
 % START BINNING!!! 
 % convert everything to 1mm x 1mm "position coordinate" bins
 [xnum, xbins] = histc(fly_combined(:,1), ...
@@ -130,8 +137,8 @@ fly_combined = fly_combined(isfinite(fly_combined(:,1)),:);
 bin_matrix = full(sparse(ybins, xbins, 1));
 
 % now convert to log(probability)
-total_binCount = sum(sum(bin_matrix));
-probMatrix = log(bin_matrix/total_binCount);
+%total_binCount = sum(sum(bin_matrix));
+probMatrix = log(bin_matrix/numRows);
 
 %% plot heatmap
 

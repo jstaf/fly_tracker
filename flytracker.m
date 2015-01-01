@@ -101,8 +101,7 @@ function stats_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 [files, pathname] = uigetfile({'*.csv', ...
     'Comma-separated values (*.csv'}, ...
-    'Select a set of .csv files for analysis...', 'MultiSelect','on');
-files
+    'Select a set of flypath files (created by "Analyze Video")...', 'MultiSelect','on');
 flytrack_stats_fn(files);
 
 
@@ -111,6 +110,10 @@ function compare_Callback(hObject, eventdata, handles)
 % hObject    handle to compare (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+[files, pathname] = uigetfile({'*.csv', ...
+    'Comma-separated values (*.csv'}, ...
+    'Select a set of interfly distance files (created by "Statistics")...', 'MultiSelect','on');
+boxPlotter_fn(files);
 
 
 

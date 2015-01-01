@@ -1,4 +1,5 @@
-function [corrected_array] = flytrack_video_fn(video_name, output_name)
+function flytrack_video_fn(video_name, thresholdVal, ...
+    filterStatus, filterDist, interpolStatus, interpolDist)
 
 %% initialize settings
 
@@ -6,16 +7,7 @@ function [corrected_array] = flytrack_video_fn(video_name, output_name)
 % against a light background. Output graph is a sanity check for the path
 % of the fly. Written by Jeff Stafford. Some code and ideas from Dan
 % Valente's FTrack suite were used, as well as the 'Division' layer mode
-% formula from GIMP.
-
-% Input video name here. MUST BE IN WORKING DIRECTORY OF THIS SCRIPT.
-%video_name = 'half_res.AVI';
-
-% Do you want .csv output?
-output = true;
-% If so, what do you want it to be named? WARNING: OVERWRITES OLD FILE
-% WITHOUT WARNING IF THEY HAVE THE SAME NAME!
-%output_name = 'half_res.csv';
+% formula from GIMP for background subtraction.
 
 % Key to output csv (fly 1 is on the bottom half of the vial):
 % column 1 = Time (in seconds)
@@ -24,31 +16,31 @@ output = true;
 % column 4 = Fly 2 x position
 % column 5 = Fly 2 y position
 
-% The size of the area you want to search (in pixels). 
+% The size of the area you want to search (in pixels).
 search_size = 20;
 
 % The average pixel intensity in the search area must exceed this value to
 % log a position and NOT skip the frame. Prevents random noise and other
 % weird stuff from "becoming the fly." Essentially requires any given blob
-% it detects to be above a certain size and intensity. 
-per_pixel_threshold = 1.5;
+% it detects to be above a certain size and intensity.
+per_pixel_threshold = thresholdVal;
 
 % Turn the "teleport filter" on? If the fly position jumps a huge distance
 % suddenly, the offending point is erased.
-teleportFilt = true;
+teleportFilt = filterStatus;
 % The "huge distance" (in millimeters) that this filter checks for.
 % Increase this number if the the program is skipping too many points.
-teleDistThreshold = 0.25;
+teleDistThreshold = filterDist;
 % Number of frames before and after to use as a point of reference.
 numAvg = 5;
 
 % Do you want interpolation? If a frame is skipped, this will define a
 % fly's position as the average position between current last accepted
 % frame and the next "real" frame.
-interpolation = true;
+interpolation = interpolStatus;
 % This is the maximum distance a fly can move and allow interpolation. The
 % default is 0.1 (1 millimeter).
-interDistThreshold = 0.1; 
+interDistThreshold = interpolDist;
 
 % Default settings for dimensions of assay vial, units in cm. Only change
 % if you're using a different vial than normal.
@@ -60,7 +52,7 @@ inner_diameter = 1.5;
 
 disp('Opening video, please wait.')
 vr = VideoReader(video_name);
-resolution = [vr.Width vr.Height]; 
+resolution = [vr.Width vr.Height];
 nfrm_movie = floor(vr.Duration * vr.FrameRate);
 
 %% define region of interest (ROI) and eliminate LR camera tilt
@@ -80,7 +72,7 @@ disp('Click and drag to define a rectangular region of interest, double-click to
 figure('name', 'ROI select'), imshow(imrotate(read(vr, 1), rotation_angle, 'bilinear'));
 ROI_select = imrect;
 ROI = wait(ROI_select); %ROI takes form of [xmin ymin width height]
-close gcf; 
+close gcf;
 
 %split into 2 ROIs, one for each fly
 total_height = top_half_height + bottom_half_height;
@@ -109,11 +101,19 @@ while bg_step < bg_number
     bg_step = bg_step + 1;
     bg_frame = rgb2gray(read(vr, bg_idx(bg_step)));
     bg_array(:,:,bg_step) = bg_frame;
-end 
+end
 background =  uint8(mean(bg_array, 3));
 background = imrotate(background, rotation_angle, 'bilinear');
 
 %% analyze each frame of the video and subtract background
+
+% pipe settings to terminal 
+disp('Settings for analysis:'); disp(); %newline
+disp(strcat('Threshold: ', num2str(thresholdVal)));
+disp(strcat('Filter on?: ', num2str(filterStatus)));
+disp(strcat('Filter distance: ', num2str(filterDist)));
+disp(strcat('Interpolation on?: ', num2str(interpolStatus)));
+disp(strcat('Interpolation distance: ', num2str(interpolDist)));
 
 disp('Calculating fly positions (this part takes awhile...).');
 
@@ -129,7 +129,7 @@ top_array = zeros(nfrm_movie, 3);
 for nofr = 1:nfrm_movie
     % Extract image from video.
     frame_int = rgb2gray(imrotate(read(vr, nofr), rotation_angle, 'bilinear'));
-         
+    
     % Subtract image background using GIMP's image division formula.
     frame_subtracted = uint8((256 * double(frame_int))./(double(background) + 1));
     
@@ -149,7 +149,7 @@ end
 disp('Creating output.');
 
 %Convert position coordinates to real, meaningful positions (coordinates in
-%cm and time in seconds. Scale is in cm/pixels. 
+%cm and time in seconds. Scale is in cm/pixels.
 xscale = inner_diameter / ROI_top(3);
 yscale_top = top_half_height / ROI_top(4); % need to change ROI for second fly
 yscale_bottom = bottom_half_height / ROI_bottom(4);
@@ -193,7 +193,7 @@ if teleportFilt == true
                 % positions suddenly moves more than the threshold, remove
                 % that point.
                 if ((pdist2(point,lastMean) > teleDistThreshold) || ...
-                    (pdist2(point,nextMean) > teleDistThreshold))
+                        (pdist2(point,nextMean) > teleDistThreshold))
                     corrected_array(numPoint, dim:(dim+1)) = NaN;
                     teleFiltNum = teleFiltNum + 1;
                 end
@@ -203,11 +203,10 @@ if teleportFilt == true
     disp(strcat(num2str(teleFiltNum), ' points removed by the telportation filter.'))
 end
 
-% Interpolation
 % If interpolation == true (set in the settings section above) the script
 % will linearly interpolate the flies' position between points as long as
 % the fly doesn't move that much (interDistThreshold) between frames.
-if interpolation == true
+if (interpolation == true)
     %iterate through datapoints for all four position columns
     interpolationNumber = 0;
     for dim = 2:2:4
@@ -255,6 +254,8 @@ skippedEnd = sum(sum(isnan(corrected_array(:,[2,4]))));
 disp(strcat('In total,', num2str(skippedEnd), ' points were not recorded out of ' , ...
     num2str(nfrm_movie * 2), ' possible points in the video.'));
 
+% create a new figure and plot fly path
+figure('Name','Fly pathing map');
 plot(corrected_array(:,2), corrected_array(:,3), ...
     corrected_array(:,4), corrected_array(:,5))
 axis([0 inner_diameter 0 (bottom_half_height + top_half_height)], 'equal', 'manual')
@@ -264,9 +265,13 @@ legend('Fly 1 (bottom)', 'Fly 2 (top)', 'location', 'southoutside')
 % inverts the y coordinates to match the video
 set(gca, 'Ydir', 'reverse')
 
-if output == true
-    output_array = corrected_array; 
-    csvwrite(output_name, output_array);
+% write output
+[output_name,path] = uiputfile;
+output_array = corrected_array;
+try % in case someone closes the file saving dialog
+    csvwrite(strcat(path,output_name), output_array);
+catch
+    disp('File saving cancelled.')
 end
 
 return;

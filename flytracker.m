@@ -43,7 +43,6 @@ else
 end
 % End initialization code - DO NOT EDIT
 
-
 % --- Executes just before flytracker is made visible.
 function flytracker_OpeningFcn(hObject, eventdata, handles, varargin)
 % This function has no output args, see OutputFcn.
@@ -54,6 +53,13 @@ function flytracker_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for flytracker
 handles.output = hObject;
+
+% INITIALIZE VARIABLES HERE
+handles.thresholdVal = true;
+handles.filterStatus = true;
+handles.filterDist = 0.1;
+handles.interpolStatus = true;
+handles.interpolDist = 0.1;
 
 % Update handles structure
 guidata(hObject, handles);
@@ -74,17 +80,18 @@ varargout{1} = handles.output;
 
 
 % --- Executes on button press in loadVideo.
-function [corrected_array, video_name, pathname] = loadVideo_Callback(hObject, eventdata, handles)
+function loadVideo_Callback(hObject, eventdata, handles)
 % hObject    handle to loadVideo (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 [video_name, pathname] = uigetfile({'*.avi;*.mj2;*.mpg;*.mp4;*.m4v;*.mov', ...
     'Video Files (*.avi;*.mj2;*.mpg;*.mp4;*.m4v;*.mov)'}, ...
-    'Select a video to analyze...', 'MultiSelect','on');
+    'Select a video to analyze...', 'MultiSelect','off');
 %numVideos = length(video_name);
-video_name = {video_name};
-[corrected_array] = flytrack_video_fn(video_name{1});
+video_name = strcat(pathname,video_name);
+flytrack_video_fn(video_name, handles.thresholdVal, handles.filterStatus, ...
+    handles.filterDist, handles.interpolStatus, handles.interpolDist);
 
 
 % --- Executes on button press in stats.
@@ -92,6 +99,11 @@ function stats_Callback(hObject, eventdata, handles)
 % hObject    handle to stats (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+[files, pathname] = uigetfile({'*.csv', ...
+    'Comma-separated values (*.csv'}, ...
+    'Select a set of .csv files for analysis...', 'MultiSelect','on');
+files
+flytrack_stats_fn(files);
 
 
 % --- Executes on button press in compare.
@@ -102,13 +114,15 @@ function compare_Callback(hObject, eventdata, handles)
 
 
 
-function thresholdSet_Callback(hObject, eventdata, handles)
+function thresholdVal = thresholdSet_Callback(hObject, eventdata, handles)
 % hObject    handle to thresholdSet (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hints: get(hObject,'String') returns contents of thresholdSet as text
 %        str2double(get(hObject,'String')) returns contents of thresholdSet as a double
+handles.thresholdVal = str2double(get(hObject,'String'));
+guidata(hObject, handles);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -132,6 +146,9 @@ function interpolDistSet_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of interpolDistSet as text
 %        str2double(get(hObject,'String')) returns contents of interpolDistSet as a double
+handles.interpolDist = str2double(get(hObject,'String'));
+guidata(hObject, handles);
+
 
 
 % --- Executes during object creation, after setting all properties.
@@ -154,6 +171,8 @@ function interpolOn_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of interpolOn
+handles.interpolStatus = get(hObject,'Value');
+guidata(hObject, handles);
 
 
 % --- Executes on button press in filterOn.
@@ -163,7 +182,8 @@ function filterOn_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of filterOn
-
+handles.filterStatus = get(hObject,'Value');
+guidata(hObject, handles);
 
 
 function filterDistSet_Callback(hObject, eventdata, handles)
@@ -173,10 +193,12 @@ function filterDistSet_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of filterDistSet as text
 %        str2double(get(hObject,'String')) returns contents of filterDistSet as a double
+handles.filterDist = str2double(get(hObject,'String'));
+guidata(hObject, handles);
 
 
 % --- Executes during object creation, after setting all properties.
-function filterDistSet_CreateFcn(hObject, eventdata, handles)
+function filterDist = filterDistSet_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to filterDistSet (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called

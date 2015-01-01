@@ -1,8 +1,8 @@
-function boxPlotter_fn(inputFiles)
+function boxPlotter_fn(inputFiles, threshold)
 
 % This is the 'distance threshold' that you are examining (measured in cm). 
 % This script calculates what fraction of time the interfly distance was below this threshold.
-distThresh = 0.5;
+distThresh = threshold;
 
 %% read the files, calculate time interfly disance is within a certain 'distThresh' of each other.
 

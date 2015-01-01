@@ -22,7 +22,7 @@ function varargout = flytracker(varargin)
 
 % Edit the above text to modify the response to help flytracker
 
-% Last Modified by GUIDE v2.5 31-Dec-2014 14:48:43
+% Last Modified by GUIDE v2.5 01-Jan-2015 14:39:26
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -55,11 +55,19 @@ function flytracker_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 % INITIALIZE VARIABLES HERE
-handles.thresholdVal = true;
+% video analysis variables
+handles.thresholdVal = 1.5;
 handles.filterStatus = true;
-handles.filterDist = 0.1;
+handles.filterDist = 0.25;
 handles.interpolStatus = true;
 handles.interpolDist = 0.1;
+% stats variables
+handles.totalTime = 120;
+handles.framerate = 30;
+handles.noFlyOn = 0;
+handles.flyPos = 'bottom';
+% comparison variables
+handles.compareDistThresh = 0.5;
 
 % Update handles structure
 guidata(hObject, handles);
@@ -102,7 +110,7 @@ function stats_Callback(hObject, eventdata, handles)
 [files, pathname] = uigetfile({'*.csv', ...
     'Comma-separated values (*.csv'}, ...
     'Select a set of flypath files (created by "Analyze Video")...', 'MultiSelect','on');
-flytrack_stats_fn(files);
+flytrack_stats_fn(files, handles.totalTime, handles.framerate, handles.noFlyOn, handles.flyPos);
 
 
 % --- Executes on button press in compare.
@@ -113,7 +121,7 @@ function compare_Callback(hObject, eventdata, handles)
 [files, pathname] = uigetfile({'*.csv', ...
     'Comma-separated values (*.csv'}, ...
     'Select a set of interfly distance files (created by "Statistics")...', 'MultiSelect','on');
-boxPlotter_fn(files);
+boxPlotter_fn(files, handles.compareDistThresh);
 
 
 
@@ -203,6 +211,116 @@ guidata(hObject, handles);
 % --- Executes during object creation, after setting all properties.
 function filterDist = filterDistSet_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to filterDistSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function totalTimeSet_Callback(hObject, eventdata, handles)
+% hObject    handle to totalTimeSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of totalTimeSet as text
+%        str2double(get(hObject,'String')) returns contents of totalTimeSet as a double
+handles.totalTime = str2double(get(hObject,'String'));
+guidata(hObject, handles);
+
+% --- Executes during object creation, after setting all properties.
+function totalTimeSet_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to totalTimeSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function framerateSet_Callback(hObject, eventdata, handles)
+% hObject    handle to framerateSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of framerateSet as text
+%        str2double(get(hObject,'String')) returns contents of framerateSet as a double
+handles.framerate = str2double(get(hObject,'String'));
+guidata(hObject, handles);
+
+
+
+% --- Executes during object creation, after setting all properties.
+function framerateSet_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to framerateSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in noFlyOnOff.
+function noFlyOnOff_Callback(hObject, eventdata, handles)
+% hObject    handle to noFlyOnOff (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of noFlyOnOff
+handles.noFlyOn = get(hObject,'Value');
+guidata(hObject, handles);
+
+
+% --- Executes on selection change in flyPosSet.
+function flyPosSet_Callback(hObject, eventdata, handles)
+% hObject    handle to flyPosSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns flyPosSet contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from flyPosSet
+handles.flyPos = contents{get(hObject,'Value')};
+guidata(hObject, handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function flyPosSet_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to flyPosSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function DistThreshSet_Callback(hObject, eventdata, handles)
+% hObject    handle to DistThreshSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of DistThreshSet as text
+%        str2double(get(hObject,'String')) returns contents of DistThreshSet as a double
+handles.compareDistThresh = str2double(get(hObject,'String'));
+guidata(hObject, handles);
+
+% --- Executes during object creation, after setting all properties.
+function DistThreshSet_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to DistThreshSet (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 

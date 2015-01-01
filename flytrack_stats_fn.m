@@ -1,4 +1,4 @@
-function flytrack_stats_fn(file_list)
+function flytrack_stats_fn(file_list, assayTime, framerateSet, noflyBool, noflyPos)
 
 %% initialize settings
 
@@ -16,15 +16,15 @@ function flytrack_stats_fn(file_list)
 % Is a fly missing from either the top or bottom? Used as a "no fly"
 % control. Type 'top' if the top fly is missing, and 'bottom' if the bottom
 % fly is missing. You can type absolute gibberish otherwise.
-noFlyOn = false;
-noFly = 'bottom';
+noFlyOn = noflyBool;
+noFly = noflyPos;
 
 % How long is the assay (in seconds)? If one of the csv files is shorter
 % than this, defaults to the shorter time.
-total_time = 120;
+total_time = assayTime;
 
 % What was your framerate? The Pentax cameras we use can capture at either 15 or 30 fps.
-framerate = 30;
+framerate = framerateSet;
 
 %input dimensions of assay vial, units in cm
 top_half_height = 3;

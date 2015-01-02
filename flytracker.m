@@ -1,4 +1,6 @@
 function varargout = flytracker(varargin)
+% Fly Tracker, created by Jeff Stafford. Run this script or open flytracker.fig to start! 
+
 % FLYTRACKER MATLAB code for flytracker.fig
 %      FLYTRACKER, by itself, creates a new FLYTRACKER or raises the existing
 %      singleton*.
@@ -22,7 +24,7 @@ function varargout = flytracker(varargin)
 
 % Edit the above text to modify the response to help flytracker
 
-% Last Modified by GUIDE v2.5 01-Jan-2015 14:39:26
+% Last Modified by GUIDE v2.5 01-Jan-2015 15:26:09
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -55,6 +57,10 @@ function flytracker_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 % INITIALIZE VARIABLES HERE
+% global variables
+handles.topHalfHeight = 3;
+handles.bottomHalfHeight = 8;
+handles.innerDiameter = 1.5;
 % video analysis variables
 handles.thresholdVal = 1.5;
 handles.filterStatus = true;
@@ -86,7 +92,6 @@ function varargout = flytracker_OutputFcn(hObject, eventdata, handles)
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 
-
 % --- Executes on button press in loadVideo.
 function loadVideo_Callback(hObject, eventdata, handles)
 % hObject    handle to loadVideo (see GCBO)
@@ -99,7 +104,8 @@ function loadVideo_Callback(hObject, eventdata, handles)
 %numVideos = length(video_name);
 video_name = strcat(pathname,video_name);
 flytrack_video_fn(video_name, handles.thresholdVal, handles.filterStatus, ...
-    handles.filterDist, handles.interpolStatus, handles.interpolDist);
+    handles.filterDist, handles.interpolStatus, handles.interpolDist, ...
+    handles.topHalfHeight, handles.bottomHalfHeight, handles.innerDiameter);
 
 
 % --- Executes on button press in stats.
@@ -110,7 +116,9 @@ function stats_Callback(hObject, eventdata, handles)
 [files, pathname] = uigetfile({'*.csv', ...
     'Comma-separated values (*.csv'}, ...
     'Select a set of flypath files (created by "Analyze Video")...', 'MultiSelect','on');
-flytrack_stats_fn(files, handles.totalTime, handles.framerate, handles.noFlyOn, handles.flyPos);
+files = strcat(pathname,files);
+flytrack_stats_fn(files, handles.totalTime, handles.framerate, handles.noFlyOn, handles.flyPos, ...
+    handles.topHalfHeight, handles.bottomHalfHeight, handles.innerDiameter);
 
 
 % --- Executes on button press in compare.
@@ -121,6 +129,7 @@ function compare_Callback(hObject, eventdata, handles)
 [files, pathname] = uigetfile({'*.csv', ...
     'Comma-separated values (*.csv'}, ...
     'Select a set of interfly distance files (created by "Statistics")...', 'MultiSelect','on');
+files = strcat(pathname,files);
 boxPlotter_fn(files, handles.compareDistThresh);
 
 
@@ -321,6 +330,80 @@ guidata(hObject, handles);
 % --- Executes during object creation, after setting all properties.
 function DistThreshSet_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to DistThreshSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function topHalfSet_Callback(hObject, eventdata, handles)
+% hObject    handle to topHalfSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of topHalfSet as text
+%        str2double(get(hObject,'String')) returns contents of topHalfSet as a double
+handles.topHalfHeight = str2double(get(hObject,'String'));
+guidata(hObject, handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function topHalfSet_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to topHalfSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function bottomHalfSet_Callback(hObject, eventdata, handles)
+% hObject    handle to bottomHalfSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of bottomHalfSet as text
+%        str2double(get(hObject,'String')) returns contents of bottomHalfSet as a double
+handles.bottomHalfHeight = str2double(get(hObject,'String'));
+guidata(hObject, handles);
+
+% --- Executes during object creation, after setting all properties.
+function bottomHalfSet_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to bottomHalfSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function diameterSet_Callback(hObject, eventdata, handles)
+% hObject    handle to diameterSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of diameterSet as text
+%        str2double(get(hObject,'String')) returns contents of diameterSet as a double
+handles.innerDiameter = str2double(get(hObject,'String'));
+guidata(hObject, handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function diameterSet_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to diameterSet (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 

@@ -1,5 +1,6 @@
 function flytrack_video_fn(video_name, thresholdVal, ...
-    filterStatus, filterDist, interpolStatus, interpolDist)
+    filterStatus, filterDist, interpolStatus, interpolDist, ...
+    topHeight, bottomHeight, diameter)
 
 %% initialize settings
 
@@ -43,10 +44,10 @@ interpolation = interpolStatus;
 interDistThreshold = interpolDist;
 
 % Default settings for dimensions of assay vial, units in cm. Only change
-% if you're using a different vial than normal.
-top_half_height = 3;
-bottom_half_height = 8;
-inner_diameter = 1.5;
+% if you're using a different via l than normal.
+top_half_height = topHeight;
+bottom_half_height = bottomHeight;
+inner_diameter = diameter;
 
 %% open video
 
@@ -108,12 +109,12 @@ background = imrotate(background, rotation_angle, 'bilinear');
 %% analyze each frame of the video and subtract background
 
 % pipe settings to terminal 
-disp('Settings for analysis:'); disp(); %newline
-disp(strcat('Threshold: ', num2str(thresholdVal)));
-disp(strcat('Filter on?: ', num2str(filterStatus)));
-disp(strcat('Filter distance: ', num2str(filterDist)));
-disp(strcat('Interpolation on?: ', num2str(interpolStatus)));
-disp(strcat('Interpolation distance: ', num2str(interpolDist)));
+disp('Settings for analysis:'); 
+disp(strcat('Threshold -> ', num2str(thresholdVal)));
+disp(strcat('Filter on? -> ', num2str(filterStatus)));
+disp(strcat('Filter distance -> ', num2str(filterDist)));
+disp(strcat('Interpolation on? -> ', num2str(interpolStatus)));
+disp(strcat('Interpolation distance -> ', num2str(interpolDist)));
 
 disp('Calculating fly positions (this part takes awhile...).');
 
@@ -126,7 +127,11 @@ bottom_array = zeros(nfrm_movie, 3);
 top_array = zeros(nfrm_movie, 3);
 
 %process frames of video for fly
+waitDialog = waitbar(0, 'Calculating fly positions');
 for nofr = 1:nfrm_movie
+    waitbar(nofr/nfrm_movie, waitDialog, ...
+        strcat({'Analyzing frame'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(nfrm_movie)));
+    
     % Extract image from video.
     frame_int = rgb2gray(imrotate(read(vr, nofr), rotation_angle, 'bilinear'));
     
@@ -143,6 +148,7 @@ for nofr = 1:nfrm_movie
     fr_position = flyFinder(frame_crop, search_size, threshold);
     top_array(nofr,:) = horzcat(nofr, fr_position);
 end
+close(waitDialog);
 
 %% process and output data
 
@@ -164,10 +170,10 @@ corrected_array = [bottom_array(:,1)/vr.FrameRate, ...
 
 skipped1 = sum(isnan(corrected_array(:,2)));
 skipped2 = sum(isnan(corrected_array(:,4)));
-disp(strcat(num2str(skipped1), ' points were skipped out of ' , ...
-    num2str(nfrm_movie), ' for fly 1 (bottom).'));
-disp(strcat(num2str(skipped2), ' points were skipped out of ' , ...
-    num2str(nfrm_movie), ' for fly 2 (top).'));
+disp(strcat(num2str(skipped1),{' '}, 'points were skipped out of ' , ...
+    num2str(nfrm_movie), {' '},'for fly 1 (bottom).'));
+disp(strcat(num2str(skipped2), {' '}, 'points were skipped out of ' , ...
+    num2str(nfrm_movie), {' '}, 'for fly 2 (top).'));
 
 % Teleport filter. Removes spurious points where fly position teleports all
 % over the vial due to a false track.
@@ -200,7 +206,7 @@ if teleportFilt == true
             end
         end
     end
-    disp(strcat(num2str(teleFiltNum), ' points removed by the telportation filter.'))
+    disp(strcat(num2str(teleFiltNum), {' '}, 'points removed by the telportation filter.'))
 end
 
 % If interpolation == true (set in the settings section above) the script
@@ -247,12 +253,12 @@ if (interpolation == true)
             end
         end
     end
-    disp(strcat(num2str(interpolationNumber), ' points recovered through interpolation.'))
+    disp(strcat(num2str(interpolationNumber), {' '}, 'points recovered through interpolation.'))
 end
 
 skippedEnd = sum(sum(isnan(corrected_array(:,[2,4]))));
-disp(strcat('In total,', num2str(skippedEnd), ' points were not recorded out of ' , ...
-    num2str(nfrm_movie * 2), ' possible points in the video.'));
+disp(strcat('In total,',{' '}, num2str(skippedEnd),{' '}, 'points were not recorded out of' , ...
+    {' '}, num2str(nfrm_movie * 2),{' '}, 'possible points in the video.'));
 
 % create a new figure and plot fly path
 figure('Name','Fly pathing map');
@@ -266,11 +272,11 @@ legend('Fly 1 (bottom)', 'Fly 2 (top)', 'location', 'southoutside')
 set(gca, 'Ydir', 'reverse')
 
 % write output
-[output_name,path] = uiputfile;
+[output_name,path] = uiputfile('.csv');
 output_array = corrected_array;
-try % in case someone closes the file saving dialog
+if output_name ~= 0  % in case someone closes the file saving dialog
     csvwrite(strcat(path,output_name), output_array);
-catch
+else
     disp('File saving cancelled.')
 end
 

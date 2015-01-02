@@ -1,4 +1,5 @@
-function flytrack_stats_fn(file_list, assayTime, framerateSet, noflyBool, noflyPos)
+function flytrack_stats_fn(file_list, assayTime, framerateSet, noflyBool, noflyPos, ...
+    topHeight, bottomHeight, diameter)
 
 %% initialize settings
 
@@ -27,14 +28,17 @@ total_time = assayTime;
 framerate = framerateSet;
 
 %input dimensions of assay vial, units in cm
-top_half_height = 3;
-bottom_half_height = 8;
-inner_diameter = 1.5;
+top_half_height = topHeight;
+bottom_half_height = bottomHeight;
+inner_diameter = diameter;
 
 total_height = top_half_height + bottom_half_height;
 
 %% read files and assemble into array
 
+if (isa(file_list,'char'))
+    file_list = {file_list};
+end
 num_files = size(file_list);
 num_files = num_files(2);
 disp(strcat(num2str(num_files), ' files selected for analysis.'));
@@ -78,6 +82,7 @@ else
 end
 
 %% calculate interfly distance for individual video replicates
+disp('Calculating interfly distance');
 
 interfly_distanceRep = zeros([size(rep_combined, 1), size(rep_combined, 3)]);
 for dim = 1:size(rep_combined, 3)
@@ -98,10 +103,10 @@ for dim = 1:size(rep_combined, 3)
 end
 
 % Write a file with the interfly distance for each replicate. 
-[interflyDistanceFilename,path] = uiputfile;
-try % in case someone closes the file saving dialog
+[interflyDistanceFilename,path] = uiputfile('.csv');
+if interflyDistanceFilename ~= 0 % in case someone closes the file saving dialog
     csvwrite(strcat(path,interflyDistanceFilename), interfly_distanceRep);
-catch
+else
     disp('File saving cancelled.')
 end
 
@@ -130,6 +135,8 @@ xlabel('Interfly distance (mm)', 'fontsize', 11);
 ylabel('Probability', 'fontsize', 11);
 
 %% bin positions for heatmapping
+
+disp('Creating heatmap');
 
 % dump fly 1 and fly 2 into a common array, remove NaN's
 fly_combined = vertcat(rep_combined_lg(:,2:3), rep_combined_lg(:,4:5));

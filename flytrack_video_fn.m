@@ -257,8 +257,7 @@ if (interpolation == true)
 end
 
 skippedEnd = sum(sum(isnan(corrected_array(:,[2,4]))));
-disp(strcat('In total,',{' '}, num2str(skippedEnd),{' '}, 'points were not recorded out of' , ...
-    {' '}, num2str(nfrm_movie * 2),{' '}, 'possible points in the video.'));
+disp(strcat({'In total,'},{' '}, num2str(skippedEnd),{' '}, {'points were not recorded out of'} , {' '}, num2str(nfrm_movie * 2), {'.'}));
 
 % create a new figure and plot fly path
 figure('Name','Fly pathing map');

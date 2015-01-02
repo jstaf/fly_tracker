@@ -1,0 +1,59 @@
+ant:
+<ant>
+  <mkdir dir="/home/jeff/Documents/MATLAB/fly_tracker/FlyTracker/for_redistribution" />
+  <mkdir dir="/home/jeff/Documents/MATLAB/fly_tracker/FlyTracker/for_testing" />
+</ant>
+mcc -o FlyTracker -W WinMain:FlyTracker -T link:exe -d /home/jeff/Documents/MATLAB/fly_tracker/FlyTracker/for_testing -R '-logfile,tracker.log' -v /home/jeff/Documents/MATLAB/fly_tracker/flytracker.m 
+Compiler version: 5.0 (R2013b)
+Dependency analysis by DEPFUN.
+Processing /usr/local/MATLAB/R2013b/toolbox/matlab/glnxa64/mcc.enc
+Processing /home/jeff/Documents/MATLAB/fly_tracker/flytracker.fig
+Processing /usr/local/MATLAB/R2013b/toolbox/stats/glnxa64/mcc.enc
+Processing /usr/local/MATLAB/R2013b/toolbox/images/glnxa64/mcc.enc
+Processing /usr/local/MATLAB/R2013b/toolbox/shared/statslib/glnxa64/mcc.enc
+Processing /usr/local/MATLAB/R2013b/toolbox/shared/imageslib/glnxa64/mcc.enc
+Processing /usr/local/MATLAB/R2013b/toolbox/matlab/guide/guideopts.fig
+Processing /usr/local/MATLAB/R2013b/toolbox/shared/spcuilib/glnxa64/mcc.enc
+Processing include files...
+2 item(s) added.
+Processing directories installed with MCR...
+The file /home/jeff/Documents/MATLAB/fly_tracker/FlyTracker/for_testing/mccExcludedFiles.log contains a list of functions excluded from the CTF archive.
+0 item(s) added.
+Generating MATLAB path for the compiled application...
+Created 61 path items.
+[Warning: Adding path "/home/jeff/Documents/MATLAB/fly_tracker" to Compiler path
+instance.] 
+Parsing file "/home/jeff/Documents/MATLAB/fly_tracker/flytracker.m"
+	(Referenced from: "Compiler Command Line").
+Parsing file "/usr/local/MATLAB/R2013b/toolbox/compiler/deploy/deployprint.m"
+	(Referenced from: "Compiler Command Line").
+Parsing file "/usr/local/MATLAB/R2013b/toolbox/compiler/deploy/printdlg.m"
+	(Referenced from: "Compiler Command Line").
+Deleting 21 temporary MEX authorization files.
+Removing: '/tmp/0561aJtUxwz_22042.auth'.
+Removing: '/tmp/0561aZwxyir_22042.auth'.
+Removing: '/tmp/0561abCxA4i_22042.auth'.
+Removing: '/tmp/0561apoaEQa_22042.auth'.
+Removing: '/tmp/0561atXdJC2_22042.auth'.
+Removing: '/tmp/0561aHFDYoU_22042.auth'.
+Removing: '/tmp/0561aPACfbM_22042.auth'.
+Removing: '/tmp/0561aDpRyXD_22042.auth'.
+Removing: '/tmp/0561a3FkTJv_22042.auth'.
+Removing: '/tmp/0561aBgehwn_22042.auth'.
+Removing: '/tmp/0561aH2gGif_22042.auth'.
+Removing: '/tmp/0561a9rQm56_22042.auth'.
+Removing: '/tmp/0561aL074RY_22042.auth'.
+Removing: '/tmp/0561al0ROEQ_22042.auth'.
+Removing: '/tmp/0561a5gMzrI_22042.auth'.
+Removing: '/tmp/0561adc6leA_22042.auth'.
+Removing: '/tmp/0561ap5M90r_22042.auth'.
+Removing: '/tmp/0561aPBNYNj_22042.auth'.
+Removing: '/tmp/0561abwaPAb_22042.auth'.
+Removing: '/tmp/0561anLJGn3_22042.auth'.
+Removing: '/tmp/0561aBnsBaV_22042.auth'.
+Generating file "/home/jeff/Documents/MATLAB/fly_tracker/FlyTracker/for_testing/readme.txt".
+Generating file "/home/jeff/Documents/MATLAB/fly_tracker/FlyTracker/for_testing/run_FlyTracker.sh".
+Packaging...
+Creating the bundle...
+Web based installer created at /home/jeff/Documents/MATLAB/fly_tracker/FlyTracker/for_redistribution/FlyTracker_web.install.
+Packaging complete.

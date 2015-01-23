@@ -101,11 +101,12 @@ function loadVideo_Callback(hObject, eventdata, handles)
 [video_name, pathname] = uigetfile({'*.avi;*.mj2;*.mpg;*.mp4;*.m4v;*.mov', ...
     'Video Files (*.avi;*.mj2;*.mpg;*.mp4;*.m4v;*.mov)'}, ...
     'Select a video to analyze...', 'MultiSelect','off');
-%numVideos = length(video_name);
-video_name = strcat(pathname,video_name);
-flytrack_video_fn(video_name, handles.thresholdVal, handles.filterStatus, ...
-    handles.filterDist, handles.interpolStatus, handles.interpolDist, ...
-    handles.topHalfHeight, handles.bottomHalfHeight, handles.innerDiameter);
+if (pathname ~= 0)
+    video_name = strcat(pathname,video_name);
+    flytrack_video_fn(video_name, handles.thresholdVal, handles.filterStatus, ...
+         handles.filterDist, handles.interpolStatus, handles.interpolDist, ...
+         handles.topHalfHeight, handles.bottomHalfHeight, handles.innerDiameter);
+end
 
 
 % --- Executes on button press in stats.
@@ -116,9 +117,13 @@ function stats_Callback(hObject, eventdata, handles)
 [files, pathname] = uigetfile({'*.csv;*', ...
     'Comma-separated values (*.csv)'}, ...
     'Select a set of flypath files (created by "Analyze Video")...', 'MultiSelect','on');
-files = strcat(pathname,files);
-flytrack_stats_fn(files, handles.totalTime, handles.framerate, handles.noFlyOn, handles.flyPos, ...
-    handles.topHalfHeight, handles.bottomHalfHeight, handles.innerDiameter);
+
+if (pathname ~= 0)
+    files = strcat(pathname,files);
+    flytrack_stats_fn(files, handles.totalTime, handles.framerate, handles.noFlyOn, handles.flyPos, ...
+        handles.topHalfHeight, handles.bottomHalfHeight, handles.innerDiameter);
+end
+
 
 
 % --- Executes on button press in compare.
@@ -129,8 +134,10 @@ function compare_Callback(hObject, eventdata, handles)
 [files, pathname] = uigetfile({'*.csv;*', ...
     'Comma-separated values (*.csv)'}, ...
     'Select a set of interfly distance files (created by "Statistics")...', 'MultiSelect','on');
-files = strcat(pathname,files);
-boxPlotter_fn(files, handles.compareDistThresh);
+if (pathname ~= 0)
+    files = strcat(pathname,files);
+    boxPlotter_fn(files, handles.compareDistThresh);
+end
 
 
 

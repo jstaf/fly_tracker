@@ -3,6 +3,11 @@ fly_tracker
 
 A short little MATLAB script that tracks flies.
 
-To analyze a video, edit the flytrack_video.m script and run it. This creates a .csv that can be used to calculate interfly distance and produce a heatmap of where the flies went during the course of the assay (generally use this script once on all files for each genotype/test condition). The stats script creates a .csv of interfly distance for that genotype. The boxPlotter.m script can be used to create a box-and-whisker plot to show and compare the amount of time flies spent below a certain "distance threshold" specified by the user.
+This program analyzes fruit fly (or other small insect) trajectories in a cyndrilical arena. Outputs the coordinates of each fly, distance between two flies, and also a heatmap of the relative probability of a fly being in any given spot. Most settings can be specified by the user using the GUI. 
 
-Contact me at jeff.stafford@live.com if you have any questions about its use or are looking to use it for a publication. 
+Hit "Analyze Video" to track the flies in a video, examine the output for multiple replicates of a given genotype with the "Statistics" button (loads .csv files from video analysis), and compare the amount of time flies spend below a certain distance from each other with the "Compare" button (loads .csv files created by the statistics function). 
+
+Note:
+When running the "Analyze Video" function, it will prompt you for 'rotation correction' (click-and-drag to draw a line parallel to the arena's height, then double-click) and a region-of-interest (click-and-drag to define the inside of the arena, double-click to proceed). When performing 'rotation correction,' the first point you draw should correspond to the top of the arena.
+
+Contact me at jeff.stafford@live.com if you have any questions about its use or are looking to use it for a publication. Also end me an email if you run into any glaring issues or bugs.

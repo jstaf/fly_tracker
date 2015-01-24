@@ -3,13 +3,13 @@ ant:
   <mkdir dir="/home/jeff/Documents/MATLAB/fly_tracker/FlyTracker/for_redistribution" />
   <mkdir dir="/home/jeff/Documents/MATLAB/fly_tracker/FlyTracker/for_testing" />
 </ant>
-mcc -o FlyTracker -W WinMain:FlyTracker -T link:exe -d /home/jeff/Documents/MATLAB/fly_tracker/FlyTracker/for_testing -R '-logfile,tracker.log' -v /home/jeff/Documents/MATLAB/fly_tracker/flytracker.m 
+mcc -o FlyTracker -W WinMain:FlyTracker -T link:exe -d /home/jeff/Documents/MATLAB/fly_tracker/FlyTracker/for_testing -R '-logfile,tracker.log' -v /home/jeff/Documents/MATLAB/fly_tracker/flytracker.m -a /home/jeff/Documents/MATLAB/fly_tracker/boxPlotter_fn.m -a /home/jeff/Documents/MATLAB/fly_tracker/flyFinder.m -a /home/jeff/Documents/MATLAB/fly_tracker/flytrack_stats_fn.m -a /home/jeff/Documents/MATLAB/fly_tracker/flytrack_video_fn.m -a /home/jeff/Documents/MATLAB/fly_tracker/flytracker.fig -a /home/jeff/Documents/MATLAB/fly_tracker/heatmap.m 
 Compiler version: 5.0 (R2013b)
 Dependency analysis by DEPFUN.
 Processing /usr/local/MATLAB/R2013b/toolbox/matlab/glnxa64/mcc.enc
-Processing /home/jeff/Documents/MATLAB/fly_tracker/flytracker.fig
 Processing /usr/local/MATLAB/R2013b/toolbox/stats/glnxa64/mcc.enc
 Processing /usr/local/MATLAB/R2013b/toolbox/images/glnxa64/mcc.enc
+Processing /home/jeff/Documents/MATLAB/fly_tracker/flytracker.fig
 Processing /usr/local/MATLAB/R2013b/toolbox/shared/statslib/glnxa64/mcc.enc
 Processing /usr/local/MATLAB/R2013b/toolbox/shared/imageslib/glnxa64/mcc.enc
 Processing /usr/local/MATLAB/R2013b/toolbox/matlab/guide/guideopts.fig
@@ -30,27 +30,27 @@ Parsing file "/usr/local/MATLAB/R2013b/toolbox/compiler/deploy/deployprint.m"
 Parsing file "/usr/local/MATLAB/R2013b/toolbox/compiler/deploy/printdlg.m"
 	(Referenced from: "Compiler Command Line").
 Deleting 21 temporary MEX authorization files.
-Removing: '/tmp/0561aJtUxwz_22042.auth'.
-Removing: '/tmp/0561aZwxyir_22042.auth'.
-Removing: '/tmp/0561abCxA4i_22042.auth'.
-Removing: '/tmp/0561apoaEQa_22042.auth'.
-Removing: '/tmp/0561atXdJC2_22042.auth'.
-Removing: '/tmp/0561aHFDYoU_22042.auth'.
-Removing: '/tmp/0561aPACfbM_22042.auth'.
-Removing: '/tmp/0561aDpRyXD_22042.auth'.
-Removing: '/tmp/0561a3FkTJv_22042.auth'.
-Removing: '/tmp/0561aBgehwn_22042.auth'.
-Removing: '/tmp/0561aH2gGif_22042.auth'.
-Removing: '/tmp/0561a9rQm56_22042.auth'.
-Removing: '/tmp/0561aL074RY_22042.auth'.
-Removing: '/tmp/0561al0ROEQ_22042.auth'.
-Removing: '/tmp/0561a5gMzrI_22042.auth'.
-Removing: '/tmp/0561adc6leA_22042.auth'.
-Removing: '/tmp/0561ap5M90r_22042.auth'.
-Removing: '/tmp/0561aPBNYNj_22042.auth'.
-Removing: '/tmp/0561abwaPAb_22042.auth'.
-Removing: '/tmp/0561anLJGn3_22042.auth'.
-Removing: '/tmp/0561aBnsBaV_22042.auth'.
+Removing: '/tmp/07946XWG1BC_31046.auth'.
+Removing: '/tmp/079468ltKuS_31046.auth'.
+Removing: '/tmp/07946vtCun8_31046.auth'.
+Removing: '/tmp/079466P4fgo_31046.auth'.
+Removing: '/tmp/07946bWN28D_31046.auth'.
+Removing: '/tmp/07946S3EV1T_31046.auth'.
+Removing: '/tmp/07946RqzPU9_31046.auth'.
+Removing: '/tmp/07946eCEKNp_31046.auth'.
+Removing: '/tmp/07946HypGGF_31046.auth'.
+Removing: '/tmp/07946eleEzV_31046.auth'.
+Removing: '/tmp/07946Z8VCsb_31046.auth'.
+Removing: '/tmp/0794627oLlr_31046.auth'.
+Removing: '/tmp/07946rsMUeH_31046.auth'.
+Removing: '/tmp/07946CvN47W_31046.auth'.
+Removing: '/tmp/079465PKf1c_31046.auth'.
+Removing: '/tmp/07946EtGrUs_31046.auth'.
+Removing: '/tmp/07946lXzENI_31046.auth'.
+Removing: '/tmp/07946ow9RGY_31046.auth'.
+Removing: '/tmp/07946pmo6ze_31046.auth'.
+Removing: '/tmp/0794680jltu_31046.auth'.
+Removing: '/tmp/079463xQBmK_31046.auth'.
 Generating file "/home/jeff/Documents/MATLAB/fly_tracker/FlyTracker/for_testing/readme.txt".
 Generating file "/home/jeff/Documents/MATLAB/fly_tracker/FlyTracker/for_testing/run_FlyTracker.sh".
 Packaging...

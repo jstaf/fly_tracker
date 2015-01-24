@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <deployment-project plugin="plugin.ezdeploy" plugin-version="1.0">
-  <configuration target="target.ezdeploy.standalone" target-name="MATLAB Compiler for Standalone Applications" name="FlyTracker" location="/home/jeff/Documents/MATLAB/fly_tracker" file="/home/jeff/Documents/MATLAB/fly_tracker/FlyTracker.prj" preferred-package-type="package.type.install" build-checksum="3531248387" preferred-package-location="/home/jeff/Documents/MATLAB/fly_tracker/FlyTracker/for_redistribution">
+  <configuration target="target.ezdeploy.standalone" target-name="MATLAB Compiler for Standalone Applications" name="FlyTracker" location="/home/jeff/Documents/MATLAB/fly_tracker" file="/home/jeff/Documents/MATLAB/fly_tracker/FlyTracker.prj" preferred-package-type="package.type.install" build-checksum="59642761" preferred-package-location="/home/jeff/Documents/MATLAB/fly_tracker/FlyTracker/for_redistribution">
     <param.appname>FlyTracker</param.appname>
     <param.authnamewatermark>Jeff Stafford</param.authnamewatermark>
     <param.email>stafford@zoology.ubc.ca</param.email>
@@ -10,9 +10,12 @@
     <param.summary>A MATLAB program designed to track flies and measure social behavior.</param.summary>
     <param.description>This program analyzes fruit fly (or other small insect) trajectories in a cyndrilical arena. Outputs the coordinates of each fly, distance between two flies, and also a heatmap of the relative probability of a fly being in any given spot. Most settings can be specified by the user using the GUI. 
 
-Hit "Analyze Video" to track the flies in a video, examine the output for multiple replicates of a given genotype with the "Statistics" button (loads .csv files from video analysis), and compare the amount of time flies spend below a certain distance from each other with the "Compare" button (loads .csv files created by the statistics function). When running the "Analyze Video" function, it will prompt you for 'rotation correction' (click-and-drag to draw a line parallel to the arena's height, then double-click) and a region-of-interest (click-and-drag to define the inside of the arena, double-click to proceed).
+Hit "Analyze Video" to track the flies in a video, examine the output for multiple replicates of a given genotype with the "Statistics" button (loads .csv files from video analysis), and compare the amount of time flies spend below a certain distance from each other with the "Compare" button (loads .csv files created by the statistics function). 
 
-Send me an email if you run into any glaring issues or bugs.</param.description>
+Note:
+When running the "Analyze Video" function, it will prompt you for 'rotation correction' (click-and-drag to draw a line parallel to the arena's height, then double-click) and a region-of-interest (click-and-drag to define the inside of the arena, double-click to proceed). When performing 'rotation correction,' the first point you draw should correspond to the top of the arena.
+
+Contact me at jeff.stafford@live.com if you have any questions about its use or are looking to use it for a publication. Also end me an email if you run into any glaring issues or bugs.</param.description>
     <param.screenshot />
     <param.version>0.1</param.version>
     <param.namespace>FlyTracker</param.namespace>
@@ -47,7 +50,7 @@ Send me an email if you run into any glaring issues or bugs.</param.description>
     <param.net.tsa.namespace>FlyTracker</param.net.tsa.namespace>
     <param.net.tsa.superclass />
     <param.net.tsa.metadata />
-    <param.net.tsa.metadata.assembly>/home/jeff</param.net.tsa.metadata.assembly>
+    <param.net.tsa.metadata.assembly>/home/jeff/Documents/MATLAB/fly_tracker</param.net.tsa.metadata.assembly>
     <param.create.log>true</param.create.log>
     <param.log.file>tracker.log</param.log.file>
     <unset>
@@ -121,7 +124,7 @@ Send me an email if you run into any glaring issues or bugs.</param.description>
       <vista>false</vista>
       <linux>true</linux>
       <solaris>false</solaris>
-      <osver>3.16.0-28-generic</osver>
+      <osver>3.16.0-29-generic</osver>
       <os32>false</os32>
       <os64>true</os64>
       <arch>glnxa64</arch>

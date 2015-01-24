@@ -42,14 +42,15 @@ end
 num_files = size(file_list);
 num_files = num_files(2);
 disp(strcat(num2str(num_files), ' files selected for analysis.'));
+disp('Loading...');
 
-disp('Loading files...');
 % Iterates through every row of each file and adds it to "rep_combined"
 % array as long as there is video remaining. If video runs out of frames
 % for any replicate, chops length of all videos to minimum video length.
 total_frames = total_time * framerate;
 rep_combined = zeros(total_frames, 5, num_files);
 for index = 1:num_files
+    disp(file_list(index));
     replicate = csvread(char(file_list(index)));
     num_rows = size(replicate);
     num_rows = num_rows(1);
@@ -88,13 +89,14 @@ interfly_distanceRep = zeros([size(rep_combined, 1), size(rep_combined, 3)]);
 for dim = 1:size(rep_combined, 3)
     for row = 1:size(rep_combined, 1)
         if noFlyOn
-            if strcmp(noFly,'top')
-                interfly_distanceRep(row,dim) = pdist2(rep_combined(row,2:3,dim), [inner_diameter/2, top_half_height]);
-            elseif strcmp(noFly,'bottom')
-                interfly_distanceRep(row,dim) = pdist2([inner_diameter/2, top_half_height], rep_combined(row,4:5,dim));
-            else
-                disp('Something went wrong, analyzing data for two flies');
-                interfly_distanceRep(row,dim) = pdist2(rep_combined(row,2:3,dim), rep_combined(row,4:5,dim));
+            switch noFly
+                case 'Top'
+                    interfly_distanceRep(row,dim) = pdist2(rep_combined(row,4:5,dim), [inner_diameter/2, top_half_height]);
+                case 'Bottom'
+                    interfly_distanceRep(row,dim) = pdist2([inner_diameter/2, top_half_height], rep_combined(row,2:3,dim));
+                otherwise
+                    disp('Something went wrong, analyzing data for two flies');
+                    interfly_distanceRep(row,dim) = pdist2(rep_combined(row,2:3,dim), rep_combined(row,4:5,dim));
             end
         else
             interfly_distanceRep(row,dim) = pdist2(rep_combined(row,2:3,dim), rep_combined(row,4:5,dim));
@@ -139,12 +141,27 @@ ylabel('Probability', 'fontsize', 11);
 disp('Creating heatmap');
 
 % dump fly 1 and fly 2 into a common array, remove NaN's
-fly_combined = vertcat(rep_combined_lg(:,2:3), rep_combined_lg(:,4:5));
+if noFlyOn
+    switch noFly
+        case 'Top'
+            fly_combined = rep_combined_lg(:,4:5);
+        case 'Bottom'
+            fly_combined = rep_combined_lg(:,2:3);
+        otherwise
+            disp('Something went wrong, analyzing data for two flies');
+            fly_combined = vertcat(rep_combined_lg(:,2:3), rep_combined_lg(:,4:5));
+    end
+else
+    fly_combined = vertcat(rep_combined_lg(:,2:3), rep_combined_lg(:,4:5));
+end
 fly_combined = fly_combined(isfinite(fly_combined(:,1)),:);
 
 % all coordinates exceeding vial bounds are reduced to what is actually possible within the vial.
-if (any(fly_combined(:,2) > 11))
-   fly_combined(find(fly_combined(:,2) > 11),2) = 11; 
+if (any(fly_combined(:,1) > inner_diameter))
+   fly_combined(find(fly_combined(:,2) > inner_diameter),2) = inner_diameter; 
+end
+if (any(fly_combined(:,2) > total_height))
+   fly_combined(find(fly_combined(:,2) > total_height),2) = total_height; 
 end
 
 
@@ -156,10 +173,14 @@ end
     linspace(0,total_height, total_height*10 ));
 % bin on a per-"position coordinate" basis
 bin_matrix = full(sparse(ybins, xbins, 1));
-
+% The full matrix will be missing rows if the fly did not go to the
+% lower-right most corner (due to the "sparse" trick). Now add those back in.
+binMatrixSize = size(bin_matrix);
+missingData = [total_height*10, inner_diameter*10] - binMatrixSize;
+bin_matrix = vertcat(bin_matrix, zeros(missingData(1), binMatrixSize(2)));
+bin_matrix = horzcat(bin_matrix, zeros(total_height*10,missingData(2)));
 % now convert to log(probability)
-%total_binCount = sum(sum(bin_matrix));
-probMatrix = log(bin_matrix/numRows);
+probMatrix = log(bin_matrix/numRows); % numRows is the total number of data points in fly_combined as defined above
 
 %% plot heatmap
 
@@ -170,7 +191,8 @@ heatYLab = 0.1:0.1:total_height;
 
 posMap = heatmap(probMatrix, heatXLab, heatYLab, [], ...
     'Colormap', 'hot', 'Colorbar', true);
-axis('equal', 'manual')
+% axis([0 inner_diameter*10 0 total_height*10]);
+axis('equal', 'manual');
 xlabel('X-coordinate (cm)', 'fontsize', 11)
 ylabel('Y-coordinate (cm)', 'fontsize', 11)
 

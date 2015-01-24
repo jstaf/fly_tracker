@@ -51,7 +51,7 @@ inner_diameter = diameter;
 
 %% open video
 
-disp('Opening video, please wait.')
+disp(strcat('Opening', {' '}, video_name, ', please wait.'));
 vr = VideoReader(video_name);
 resolution = [vr.Width vr.Height];
 nfrm_movie = floor(vr.Duration * vr.FrameRate);
@@ -64,9 +64,11 @@ figure('name', 'Rotation correction'), imshow(read(vr, 1));
 line_select = imline;
 line = wait(line_select);
 %Determine angle of correction rotation.
-rotation_angle = 360 - (57.3 * atan((line(1,1) - line(2,1)) / (line(1,2) - line(2,2)) ) );
-%Determine number of pixels after rotation.
-%resolution = size(imrotate(read(vr, 1), rotation_angle));
+rotation_angle = -(57.3 * atan((line(1,1) - line(2,1)) / (line(1,2) - line(2,2)) ) );
+% Ensure that "point1" is always on top.
+if (line(1,2) > line(2,2))
+   rotation_angle = rotation_angle + 180;
+end
 close gcf;
 
 disp('Click and drag to define a rectangular region of interest, double-click to proceed.');

@@ -71,7 +71,7 @@ handles.interpolDist = 0.1;
 handles.totalTime = 120;
 handles.framerate = 30;
 handles.noFlyOn = 0;
-handles.flyPos = 'bottom';
+handles.flyPos = 'Bottom';
 % comparison variables
 handles.compareDistThresh = 0.5;
 
@@ -306,6 +306,7 @@ function flyPosSet_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns flyPosSet contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from flyPosSet
+contents = cellstr(get(hObject,'String'));
 handles.flyPos = contents{get(hObject,'Value')};
 guidata(hObject, handles);
 

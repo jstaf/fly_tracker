@@ -158,7 +158,7 @@ fly_combined = fly_combined(isfinite(fly_combined(:,1)),:);
 
 % all coordinates exceeding vial bounds are reduced to what is actually possible within the vial.
 if (any(fly_combined(:,1) > inner_diameter))
-   fly_combined(find(fly_combined(:,2) > inner_diameter),2) = inner_diameter; 
+   fly_combined(find(fly_combined(:,1) > inner_diameter),1) = inner_diameter; 
 end
 if (any(fly_combined(:,2) > total_height))
    fly_combined(find(fly_combined(:,2) > total_height),2) = total_height; 

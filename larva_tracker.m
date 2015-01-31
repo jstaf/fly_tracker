@@ -50,24 +50,14 @@ end
 background =  uint8(mean(bg_array, 3));
 background = imcrop(background, ROI);
 
-%% analyze each frame of the video and subtract background
-
-disp('Calculating larvae positions (this part takes awhile...).');
-
-% re-define search parameters to make sense regardless of size
-threshold = (search_size)^2 * per_pixel_threshold;
-search_size = round(search_size / 2);
-
-%initialize arrays used to log position
-num_larvae = 5;
-position = zeros(nfrm_movie, num_larvae + 1);
+%% create a binary map from each frame
 
 %process frames of video for fly
-binaryVideo = zeros(ROI(3), ROI(4) ,nfrm_movie);
-waitDialog = waitbar(0, 'Creating binary maps from images...');
+binaryMap = false(ROI(4)+1, ROI(3)+1 ,nfrm_movie);
+waitDialog = waitbar(0, 'Creating binary maps from video...');
 for nofr = 1:nfrm_movie
     waitbar(nofr/nfrm_movie, waitDialog, ...
-        strcat({'Analyzing frame'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(nfrm_movie)));
+        strcat({'Creating binary maps from frame'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(nfrm_movie)));
     
     % Extract image from video.
     frameInt = rgb2gray(read(vr, nofr));
@@ -81,9 +71,63 @@ for nofr = 1:nfrm_movie
     frame = medfilt2(im2bw(frame, thresh));
     
     % Dump image to binaryVideo for later separation
-    binaryVideo(:,:,nofr);
+    binaryMap(:,:,nofr) = frame;
 end
 close(waitDialog);
+
+%% label and analyze binary maps
+
+numLarvae = 5;
+position = zeros(nfrm_movie, numLarvae);
+
+waitDialog = waitbar(0, 'Analyzing maps...');
+binaryLabel = zeros(size(binaryMap), 'uint8');
+for nofr = 1:nfrm_movie
+    waitbar(nofr/nfrm_movie, waitDialog, ...
+        strcat({'Analyzing map'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(nfrm_movie)));
+    
+    % label regions and compute region properties
+    binaryLabel(:,:,nofr) = bwlabel(binaryMap(:,:,nofr),4);
+    stat = regionprops(binaryLabel(:,:,nofr),'Area', 'Centroid');
+    
+    checkNum = length([stat.Area]);
+    if checkNum < numLarvae % if missing larvae
+        % TODO find regions larger than larva are supposed to be
+        position(nofr,:) = NaN; %placeholder
+    elseif checkNum > numLarvae % we've likely picked up noise
+        % TODO pick the largest areas
+        position(nofr,:) = NaN; %placeholder!
+    else
+        % Need to sort by proximity to origin, and check for proximity to
+        % last frame, THEN extract centroids
+        centroid = [stat.Centroid]';
+        for larva = 1:checkNum
+            position(nofr, (larva*2-1):(larva*2)) = centroid((larva*2-1):(larva*2));
+        end
+    end
+end
+close(waitDialog);
+
+%% create a video for debugging
+
+% reformat data
+videoOut = uint8(binaryMap);
+videoOut = videoOut*255;
+
+writer = VideoWriter('larva_debug.avi');
+writer.FrameRate = vr.FrameRate;
+% writer.VideoFormat = 'Grayscale';
+open(writer);
+preFrame = zeros(ROI(4)+1, ROI(3)+1, 'uint8');
+for nofr = 1:nfrm_movie
+    for channel = 1:3
+        preFrame(:,:,channel) = videoOut(:,:,nofr);
+    end
+    videoFrame = im2frame(preFrame);
+    writeVideo(writer, videoFrame);
+    
+end
+close(writer);
 
 %% process and output data
 
@@ -92,14 +136,15 @@ disp('Creating output.');
 %Convert position coordinates to real, meaningful positions (coordinates in
 %cm and time in seconds. Scale is in cm/pixels.
 xscale = inner_diameter / ROI_top(3);
-yscale_top = ROI_top(4); % need to change ROI for second fly
-yscale_bottom = bottom_half_height / ROI_bottom(4);
+yscale = inner_diameter / ROI_top(4); % need to change ROI for second fly
 
 %convert to coordinates in cm and frame number to seconds, add coordinate
 %offset for bottom fly
-corrected_array = [position(:,1)/vr.FrameRate, ...
-    position(:,2) * xscale, ...
-    (position(:,3) * yscale_bottom);
+corrected_array = position; % placeholder
+
+% corrected_array = [position(:,1)/vr.FrameRate, ...
+%     position(:,2) * xscale, ...
+%     (position(:,3) * yscale);
 
 % create a new figure and plot fly path
 figure('Name','Fly pathing map');
@@ -114,9 +159,9 @@ set(gca, 'Ydir', 'reverse');
 
 % write output
 [output_name,path] = uiputfile('.csv');
-output_array = corrected_array;
-if (output_name ~= 0)  % in case someone closes the file saving dialog
-    csvwrite(strcat(path,output_name), output_array);
+
+if output_name ~= 0  % in case someone closes the file saving dialog
+    csvwrite(strcat(path,output_name), corrected_array);
 else
     disp('File saving cancelled.')
 end

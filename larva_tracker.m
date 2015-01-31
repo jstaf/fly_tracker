@@ -1,6 +1,7 @@
 %% initialize settings
 
 video_name = 'IMGP0521.AVI';
+numLarvae = 5;
 
 % The size of the area you want to search (in pixels).
 search_size = 20;
@@ -67,17 +68,25 @@ for nofr = 1:nfrm_movie
     frame = frame - background;
     
     % Threshold image.
-    thresh = graythresh(frame);
-    frame = medfilt2(im2bw(frame, thresh));
+    thresh = graythresh(frame) + 0.025; % otsu's method
+    %thresh = 0.25;
+    frame_thresh = medfilt2(im2bw(frame, thresh));
+    
+    % Check to see if the threshold is too low, recalculate frame with
+    % higher threshold if yes.
+    check = regionprops(frame_thresh, 'Area');
+    if length([check.Area]) > (numLarvae + 10)
+        thresh = thresh + 0.15;
+        frame_thresh = medfilt2(im2bw(frame, thresh));
+    end
     
     % Dump image to binaryVideo for later separation
-    binaryMap(:,:,nofr) = frame;
+    binaryMap(:,:,nofr) = frame_thresh;
 end
 close(waitDialog);
 
 %% label and analyze binary maps
 
-numLarvae = 5;
 position = zeros(nfrm_movie, numLarvae);
 
 waitDialog = waitbar(0, 'Analyzing maps...');
@@ -114,20 +123,23 @@ close(waitDialog);
 videoOut = uint8(binaryMap);
 videoOut = videoOut*255;
 
-writer = VideoWriter('larva_debug.avi');
+writer = VideoWriter('larvaDebug_otsu_dynamic.avi');
 writer.FrameRate = vr.FrameRate;
-% writer.VideoFormat = 'Grayscale';
 open(writer);
 preFrame = zeros(ROI(4)+1, ROI(3)+1, 'uint8');
+waitDialog = waitbar(0, 'Creating video...');
 for nofr = 1:nfrm_movie
+    waitbar(nofr/nfrm_movie, waitDialog, ...
+        strcat({'Writing frame'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(nfrm_movie)));
     for channel = 1:3
         preFrame(:,:,channel) = videoOut(:,:,nofr);
     end
-    videoFrame = im2frame(preFrame);
-    writeVideo(writer, videoFrame);
+    writeVideo(writer, im2frame(preFrame));
     
 end
 close(writer);
+close(waitDialog);
+
 
 %% process and output data
 

@@ -2,19 +2,8 @@
 
 video_name = 'IMGP0521.AVI';
 numLarvae = 5;
-
-% The size of the area you want to search (in pixels).
-search_size = 20;
-
-% The average pixel intensity in the search area must exceed this value to
-% log a position and NOT skip the frame. Prevents random noise and other
-% weird stuff from "becoming the fly." Essentially requires any given blob
-% it detects to be above a certain size and intensity.
-per_pixel_threshold = 1.5;
-
-% Default settings for dimensions of assay, units in cm. Only change
-% if you're using a different via l than normal.
-inner_diameter = 10;
+threshOffset = 0;
+outputVideoName = 'larvaDebug_tracking2_2.avi';
 
 %% open video
 
@@ -68,7 +57,7 @@ for nofr = 1:nfrm_movie
     frame = frame - background;
     
     % Threshold image.
-    thresh = graythresh(frame) + 0.025; % otsu's method + an offset
+    thresh = graythresh(frame) + threshOffset; % otsu's method + an offset
     frame_thresh = medfilt2(im2bw(frame, thresh));
     
     % Check to see if the threshold is too low, recalculate frame with
@@ -90,6 +79,7 @@ position = zeros(nfrm_movie, numLarvae);
 
 waitDialog = waitbar(0, 'Analyzing maps...');
 binaryLabel = zeros(size(binaryMap), 'uint8');
+unfilteredLabel = binaryLabel;
 for nofr = 1:nfrm_movie
     waitbar(nofr/nfrm_movie, waitDialog, ...
         strcat({'Analyzing map'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(nfrm_movie)));
@@ -98,12 +88,21 @@ for nofr = 1:nfrm_movie
     binaryLabel(:,:,nofr) = bwlabel(binaryMap(:,:,nofr),4);
     regions = regionprops(binaryLabel(:,:,nofr),'Area', 'Centroid', 'PixelList');
     
-    % small regions (not larvae) are filtered out of our array
+    % store information for debugging
+    unfilteredLabel(:,:,nofr) = binaryLabel(:,:,nofr);
+    
+    % small regions (not larvae) are filtered out of our data
     regionNum = 1;
     while regionNum < length([regions.Area])
         % arbitrary threshold- larvae are about twice this size
         if (regions(regionNum).Area < 40) 
-            regions(regionNum) = [];
+            for pixRow = 1:size(regions(regionNum).PixelList,1);
+                binaryLabel( ...
+                    regions(regionNum).PixelList(pixRow,2), ...
+                    regions(regionNum).PixelList(pixRow,1), nofr) ...
+                    = 0; % 0 = unlabeled state
+            end
+            regions(regionNum) = []; % now delete the entry
         else
             regionNum = regionNum + 1;
         end
@@ -142,7 +141,6 @@ for nofr = 1:nfrm_movie
                 regions(newLabel).PixelList(pixRow,2), ...
                 regions(newLabel).PixelList(pixRow,1), nofr) ...
                 = newLabel;
-            % might have indexed this wrong!!!!!!!!! CHECK ME!!!!!
         end
     end
     
@@ -173,7 +171,7 @@ close(waitDialog);
 
 % generate colors
 % maximum = max(binaryLabel(:));
-maximum = max(test(:));
+maximum = numLarvae;
 colorMap = zeros(maximum, 3);
 for i = 1:maximum
     val = double(i)/double(maximum);
@@ -193,29 +191,32 @@ randomIdx = randperm(maximum);
 colorMap = colorMap(randomIdx, :);
 
 % add color data to show labeling
+waitDialog = waitbar(0, 'Creating video...');
 blSize = size(binaryLabel);
 movieFrames = zeros(blSize(1), blSize(2), 3, blSize(3), 'uint8');
-waitDialog = waitbar(0, 'Creating video...');
+for i = 1:3
+    movieFrames(:,:,i,:) = binaryLabel(:,:,:);    
+end
 for nofr = 1:blSize(3)
     waitbar(nofr/nfrm_movie, waitDialog, ...
         strcat({'Creating frame'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(nfrm_movie)));
     for channel = 1:3
-        movieFrames(:,:,channel,nofr) = binaryLabel(:,:,nofr);
-        %testFrame(:,:,channel) = test;
         for color = 1:maximum
-            % next line needs an indexing fix
+            % color pixels according to region number
             tmp = movieFrames(:,:,channel,nofr);
-            tmp(tmp == color) = colorMap(color,channel);
+            tmp(tmp == color) = colorMap(color,channel);    
             movieFrames(:,:,channel,nofr) = tmp;
-            
-%             tmp = testFrame(:,:,channel);
-%             tmp(tmp == color) = colorMap(color,channel);
-%             testFrame(:,:,channel) = tmp;
         end
+    end
+    % add text labels
+    movieProps = regionprops(binaryLabel(:,:,nofr),'Centroid');
+    for labelNumber = 1:((length([movieProps.Centroid]))/2)
+        movieFrames(:,:,:,nofr) = insertText(movieFrames(:,:,:,nofr), movieProps(labelNumber).Centroid, labelNumber, 'BoxColor', [255,255,255]);
     end
 end
 
-writer = VideoWriter('larvaDebug_tracking.avi');
+% finally write the frames to disk
+writer = VideoWriter(outputVideoName);
 writer.FrameRate = vr.FrameRate;
 open(writer);
 for nofr = 1:nfrm_movie
@@ -227,40 +228,18 @@ end
 close(writer);
 close(waitDialog);
 
+%% show number of tracked objects over time
 
-%% process and output data
-
-disp('Creating output.');
-
-%Convert position coordinates to real, meaningful positions (coordinates in
-%cm and time in seconds. Scale is in cm/pixels.
-xscale = inner_diameter / ROI_top(3);
-yscale = inner_diameter / ROI_top(4); % need to change ROI for second fly
-
-%convert to coordinates in cm and frame number to seconds, add coordinate
-%offset for bottom fly
-corrected_array = position; % placeholder
-
-% corrected_array = [position(:,1)/vr.FrameRate, ...
-%     position(:,2) * xscale, ...
-%     (position(:,3) * yscale);
-
-% create a new figure and plot fly path
-figure('Name','Fly pathing map');
-plot(corrected_array(:,2), corrected_array(:,3), ...
-    corrected_array(:,4), corrected_array(:,5));
-axis([0 inner_diameter 0 (bottom_half_height + top_half_height)], 'equal', 'manual');
-xlabel('X-coordinate (cm)', 'fontsize', 11);
-ylabel('Y-coordinate (cm)', 'fontsize', 11);
-legend('Fly 1 (bottom)', 'Fly 2 (top)', 'location', 'southoutside');
-% inverts the y coordinates to match the video
-set(gca, 'Ydir', 'reverse');
-
-% write output
-[output_name,path] = uiputfile('.csv');
-
-if output_name ~= 0  % in case someone closes the file saving dialog
-    csvwrite(strcat(path,output_name), corrected_array);
-else
-    disp('File saving cancelled.')
+numberTracked = zeros(nfrm_movie,1, 'uint8');
+numberUnfiltered = numberTracked;
+for nofr = 1:nfrm_movie
+    numberTracked(nofr) = max(max(binaryLabel(:,:,nofr)));
+    numberUnfiltered(nofr) = max(max(unfilteredLabel(:,:,nofr)));
 end
+plot(1:nfrm_movie, numberTracked, ...
+    1:nfrm_movie, numberUnfiltered, ...
+    1:nfrm_movie, numLarvae);
+xlabel('Frame number');
+ylabel('# objects tracked');
+legend('Processed data', 'Raw data', 'Actual number', ...
+    'location', 'NorthWest');

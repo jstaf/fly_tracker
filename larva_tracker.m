@@ -97,23 +97,59 @@ for nofr = 1:nfrm_movie
     
     % label regions and compute region properties
     binaryLabel(:,:,nofr) = bwlabel(binaryMap(:,:,nofr),4);
-    stat = regionprops(binaryLabel(:,:,nofr),'Area', 'Centroid');
+    regions = regionprops(binaryLabel(:,:,nofr),'Area', 'Centroid', 'PixelIdxList', 'PixelList');
     
-    checkNum = length([stat.Area]);
+    % small regions (not larvae) are filtered out of our array
+    regionNum = 1;
+    while regionNum < length([regions.Area])
+        % arbitrary threshold- larvae are about twice this size
+        if (regions(regionNum).Area < 40) 
+            regions(regionNum) = [];
+        else
+            regionNum = regionNum + 1;
+        end
+    end
+    
+    % relabel regions
+    if (nofr == 1)
+        % sort and label regions by euclidean distance to (0,0)
+        for i = 1:length([regions.Area])
+            regions(i).DistToOrigin = sqrt(regions(i).Centroid(1)^2 + regions(i).Centroid(2)^2);
+        end
+        [tmp, idx] = sort([regions.DistToOrigin]);
+        regions = regions(idx);
+        for newLabel = 1:length([regions.Area])
+            % change the value of every labeled pixel to the new value
+            for pixRow = 1:size(regions(newLabel).PixelList,1);
+                binaryLabel( ...
+                    regions(newLabel).PixelList(pixRow,1), ...
+                    regions(newLabel).PixelList(pixRow,2), nofr) ...
+                    = newLabel;
+            end
+        end
+    else
+        % relabel regions based on proximity to last labeled regions
+    end
+    
+    checkNum = length([regions.Area]);
     if checkNum < numLarvae % if missing larvae
         % TODO find regions larger than larva are supposed to be
+        % count those regions twice or subtract last frame
         position(nofr,:) = NaN; %placeholder
     elseif checkNum > numLarvae % we've likely picked up noise
-        % TODO pick the largest areas
+        % TODO pick the areas closest to last size and position
         position(nofr,:) = NaN; %placeholder!
     else
         % Need to sort by proximity to origin, and check for proximity to
         % last frame, THEN extract centroids
-        centroid = [stat.Centroid]';
+        centroid = [regions.Centroid]';
         for larva = 1:checkNum
             position(nofr, (larva*2-1):(larva*2)) = centroid((larva*2-1):(larva*2));
         end
     end
+    
+    % store regionProps data for next loop iteration
+    lastRegions = regions;
 end
 close(waitDialog);
 
@@ -123,7 +159,7 @@ close(waitDialog);
 videoOut = uint8(binaryMap);
 videoOut = videoOut*255;
 
-writer = VideoWriter('larvaDebug_otsu_dynamic.avi');
+writer = VideoWriter('larvaDebug_ellenTest_largeROI.avi');
 writer.FrameRate = vr.FrameRate;
 open(writer);
 preFrame = zeros(ROI(4)+1, ROI(3)+1, 'uint8');

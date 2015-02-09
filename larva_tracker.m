@@ -9,6 +9,7 @@ threshOffset = 0;
 % Diameter of the circular arena we are using.
 arenaSize = 6;
 
+% Don't touch this variable for now.
 numLarvae = 1;
 
 %% open video
@@ -216,6 +217,7 @@ legend('Processed data', 'Raw data', 'Actual number', ...
 
 xscale = arenaSize / ROI(3);
 yscale = arenaSize / ROI(4);
+
 scaledPos = position;
 for column = 1:size(position,2)
     if (mod(column,2) == 1) % odd column
@@ -224,11 +226,16 @@ for column = 1:size(position,2)
         scaledPos(:,column) = position(:,column)*yscale;
     end
 end
+scaledPos = horzcat(((1:nfrm_movie)*vr.FrameRate)', scaledPos);
+% correct spurious points
+scaledPos = distFilter(scaledPos, 0.25);
+scaledPos = interpolatePos(scaledPos, 0.1);
+%scaledPos = scaledPos(1:nfrm_movie-5,:);
 
 figure('Name','Pathing map');
 hold on;
-for i = 2:2:size(scaledPos,2)
-    plot(scaledPos(:,i-1), scaledPos(:,i));
+for i = 2:2:size(scaledPos,2)-1
+    plot(scaledPos(:,i), scaledPos(:,i+1));
 end
 hold off;
 xlabel('X-coordinate (cm)', 'fontsize', 11);
@@ -241,7 +248,7 @@ set(gca, 'Ydir', 'reverse');
 
 [output_name,path] = uiputfile('.csv');
 if output_name ~= 0  % in case someone closes the file saving dialog
-    csvwrite(strcat(path,output_name), position);
+    csvwrite(strcat(path,output_name), scaledPos);
 else
     disp('File saving cancelled.')
 end

@@ -1,9 +1,15 @@
 %% initialize settings
 
-video_name = 'IMGP0521.AVI';
-numLarvae = 5;
+video_name = 'IMGP0271.AVI';
+
+% A decimal value used during background subtraction. A typical value would
+% be from -0.1 to 0.1. Can be negative.
 threshOffset = 0;
-outputVideoName = 'larvaDebug_tracking2_2.avi';
+
+% Diameter of the circular arena we are using.
+arenaSize = 6;
+
+numLarvae = 1;
 
 %% open video
 
@@ -79,7 +85,7 @@ position = zeros(nfrm_movie, numLarvae);
 
 waitDialog = waitbar(0, 'Analyzing maps...');
 binaryLabel = zeros(size(binaryMap), 'uint8');
-unfilteredLabel = binaryLabel;
+%unfilteredLabel = binaryLabel;
 for nofr = 1:nfrm_movie
     waitbar(nofr/nfrm_movie, waitDialog, ...
         strcat({'Analyzing map'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(nfrm_movie)));
@@ -89,26 +95,28 @@ for nofr = 1:nfrm_movie
     regions = regionprops(binaryLabel(:,:,nofr),'Area', 'Centroid', 'PixelList');
     
     % store information for debugging
-    unfilteredLabel(:,:,nofr) = binaryLabel(:,:,nofr);
+    % unfilteredLabel(:,:,nofr) = binaryLabel(:,:,nofr);
     
     % small regions (not larvae) are filtered out of our data
     regionNum = 1;
-    while regionNum < length([regions.Area])
+    while (regionNum < length([regions.Area]))
         % arbitrary threshold- larvae are about twice this size
         if (regions(regionNum).Area < 40) 
+            % unlabel pixels in small regions
             for pixRow = 1:size(regions(regionNum).PixelList,1);
                 binaryLabel( ...
                     regions(regionNum).PixelList(pixRow,2), ...
                     regions(regionNum).PixelList(pixRow,1), nofr) ...
-                    = 0; % 0 = unlabeled state
+                    = 0;
             end
-            regions(regionNum) = []; % now delete the entry
+            % now delete the entry
+            regions(regionNum) = []; 
         else
             regionNum = regionNum + 1;
         end
     end
     
-    % relabel regions
+    % re-count and label regions
     regionsLength = length([regions.Area]);
     if (nofr == 1)
         % sort regions by euclidean distance to (0,0)
@@ -117,6 +125,7 @@ for nofr = 1:nfrm_movie
         end
         [temp, idx] = sort([regions.DistToOrigin]);
         regions = regions(idx);
+        skip = false;
     else
         % sort regions based on proximity to last labeled regions
         for i = 1:regionsLength
@@ -140,106 +149,100 @@ for nofr = 1:nfrm_movie
             binaryLabel( ...
                 regions(newLabel).PixelList(pixRow,2), ...
                 regions(newLabel).PixelList(pixRow,1), nofr) ...
-                = newLabel;
+                = newLabel; % change the label to the last label
         end
     end
     
-%     if regionsLength < numLarvae % if missing larvae
-%         % TODO find regions larger than larva are supposed to be
-%         % count those regions twice or subtract last frame
-%         position(nofr,:) = NaN; %placeholder
-%     elseif regionsLength > numLarvae % we've likely picked up noise
-%         % TODO pick the areas closest to last size and position
-%         % areas furthest from last size should be last in our sorted
-%         % regions
-%         position(nofr,:) = NaN; %placeholder!
-%     else
-%         % Need to sort by proximity to origin, and check for proximity to
-%         % last frame, THEN extract centroids
-%         centroid = [regions.Centroid]';
-%         for larva = 1:checkNum
-%             position(nofr, (larva*2-1):(larva*2)) = centroid((larva*2-1):(larva*2));
+    if regionsLength < numLarvae % if missing larvae
+        % TODO find regions larger than larva are supposed to be
+        % count those regions twice or subtract last frame
+        skip = true;
+%         if regionsLength < length([lastRegions.Area])
+%             % two larva just touched last frame
 %         end
-%     end
+    elseif regionsLength > numLarvae % we've likely picked up noise
+        % TODO pick the areas closest to last size and position
+        % areas furthest from last size should be last in our sorted
+        % regions
+        
+        % delete all of the "last" regions in the list, (these are furthest
+        % from current larvae)
+        for reg = (numLarvae+1):regionsLength
+            % unlabel pixels
+            for pixRow = 1:size(regions(reg).PixelList,1);
+                binaryLabel( ...
+                    regions(reg).PixelList(pixRow,2), ...
+                    regions(reg).PixelList(pixRow,1), nofr) ...
+                    = 0;
+            end
+            % now delete the entry
+            regions(reg) = []; 
+        end
+    end
     
+    % extract positions
+    if (~skip)
+        centroid = [regions.Centroid]';
+        for larva = 1:numLarvae
+            position(nofr, (larva*2-1):(larva*2)) = centroid((larva*2-1):(larva*2));
+        end
+    else
+        position(nofr,:) = NaN; %placeholder
+    end
+    
+    skip = false;
     % store 'regions' regionProps data for next loop iteration
     lastRegions = regions;
 end
 close(waitDialog);
 
-%% create a video for debugging
-
-% generate colors
-% maximum = max(binaryLabel(:));
-maximum = numLarvae;
-colorMap = zeros(maximum, 3);
-for i = 1:maximum
-    val = double(i)/double(maximum);
-    % r channel
-    colorMap(i,1) = ceil(255*val);
-    % g channel
-    if val < 0.5
-        colorMap(i,2) = ceil(255*val*2);
-    else
-        colorMap(i,2) = 255 - ceil(255*(val-0.5)*2);
-    end
-    % b channel
-    colorMap(i,3) = 255 - ceil(255*val);
-end
-% randomize colormap for more variety
-randomIdx = randperm(maximum);
-colorMap = colorMap(randomIdx, :);
-
-% add color data to show labeling
-waitDialog = waitbar(0, 'Creating video...');
-blSize = size(binaryLabel);
-movieFrames = zeros(blSize(1), blSize(2), 3, blSize(3), 'uint8');
-for i = 1:3
-    movieFrames(:,:,i,:) = binaryLabel(:,:,:);    
-end
-for nofr = 1:blSize(3)
-    waitbar(nofr/nfrm_movie, waitDialog, ...
-        strcat({'Creating frame'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(nfrm_movie)));
-    for channel = 1:3
-        for color = 1:maximum
-            % color pixels according to region number
-            tmp = movieFrames(:,:,channel,nofr);
-            tmp(tmp == color) = colorMap(color,channel);    
-            movieFrames(:,:,channel,nofr) = tmp;
-        end
-    end
-    % add text labels
-    movieProps = regionprops(binaryLabel(:,:,nofr),'Centroid');
-    for labelNumber = 1:((length([movieProps.Centroid]))/2)
-        movieFrames(:,:,:,nofr) = insertText(movieFrames(:,:,:,nofr), movieProps(labelNumber).Centroid, labelNumber, 'BoxColor', [255,255,255]);
-    end
-end
-
-% finally write the frames to disk
-writer = VideoWriter(outputVideoName);
-writer.FrameRate = vr.FrameRate;
-open(writer);
-for nofr = 1:nfrm_movie
-    waitbar(nofr/nfrm_movie, waitDialog, ...
-        strcat({'Writing frame'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(nfrm_movie)));
-    writeVideo(writer, im2frame(movieFrames(:,:,:,nofr)));
-    
-end
-close(writer);
-close(waitDialog);
-
 %% show number of tracked objects over time
 
 numberTracked = zeros(nfrm_movie,1, 'uint8');
-numberUnfiltered = numberTracked;
+%numberUnfiltered = numberTracked;
 for nofr = 1:nfrm_movie
     numberTracked(nofr) = max(max(binaryLabel(:,:,nofr)));
-    numberUnfiltered(nofr) = max(max(unfilteredLabel(:,:,nofr)));
+    %numberUnfiltered(nofr) = max(max(unfilteredLabel(:,:,nofr)));
 end
-plot(1:nfrm_movie, numberTracked, ...
-    1:nfrm_movie, numberUnfiltered, ...
+figure('Name','Tracking Quality');
+plot(1:nfrm_movie, numberTracked, ... %    1:nfrm_movie, numberUnfiltered, ...
     1:nfrm_movie, numLarvae);
 xlabel('Frame number');
 ylabel('# objects tracked');
 legend('Processed data', 'Raw data', 'Actual number', ...
     'location', 'NorthWest');
+
+%% convert positions to meaningful coordinates and plot
+
+xscale = arenaSize / ROI(3);
+yscale = arenaSize / ROI(4);
+scaledPos = position;
+for column = 1:size(position,2)
+    if (mod(column,2) == 1) % odd column
+        scaledPos(:,column) = position(:,column)*xscale;
+    else % even column
+        scaledPos(:,column) = position(:,column)*yscale;
+    end
+end
+
+figure('Name','Pathing map');
+hold on;
+for i = 2:2:size(scaledPos,2)
+    plot(scaledPos(:,i-1), scaledPos(:,i));
+end
+hold off;
+xlabel('X-coordinate (cm)', 'fontsize', 11);
+ylabel('Y-coordinate (cm)', 'fontsize', 11);
+axis([0 arenaSize 0 arenaSize], 'equal', 'manual')
+% inverts the y coordinates to match the video
+set(gca, 'Ydir', 'reverse');
+
+%% write positions to disk
+
+[output_name,path] = uiputfile('.csv');
+if output_name ~= 0  % in case someone closes the file saving dialog
+    csvwrite(strcat(path,output_name), position);
+else
+    disp('File saving cancelled.')
+end
+

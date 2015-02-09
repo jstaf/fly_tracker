@@ -1,11 +1,11 @@
-function debugVideo(binaryLabel, outputVideoName, framerate)
+function debugVideo(binaryLabelArray, outputVideoName, framerate)
 
 % This function creates a video from an array of regions created by the
 % bwlabel command. The first two dimensions are the image itself, and the
 % third is the series of images (if that makes sense).
 
 % generate colors
-maximum = max(binaryLabel(:));
+maximum = max(binaryLabelArray(:));
 colorMap = zeros(maximum, 3);
 for i = 1:maximum
     val = double(i)/double(maximum);
@@ -26,14 +26,14 @@ colorMap = colorMap(randomIdx, :);
 
 % add color data to show labeling
 waitDialog = waitbar(0, 'Creating video...');
-blSize = size(binaryLabel);
+blSize = size(binaryLabelArray);
 movieFrames = zeros(blSize(1), blSize(2), 3, blSize(3), 'uint8');
 for i = 1:3
-    movieFrames(:,:,i,:) = binaryLabel(:,:,:);    
+    movieFrames(:,:,i,:) = binaryLabelArray(:,:,:);    
 end
 for nofr = 1:blSize(3)
-    waitbar(nofr/nfrm_movie, waitDialog, ...
-        strcat({'Creating frame'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(nfrm_movie)));
+    waitbar(nofr/blSize(3), waitDialog, ...
+        strcat({'Creating frame'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(blSize(3))));
     for channel = 1:3
         for color = 1:maximum
             % color pixels according to region number
@@ -43,7 +43,7 @@ for nofr = 1:blSize(3)
         end
     end
     % add text labels
-    movieProps = regionprops(binaryLabel(:,:,nofr),'Centroid');
+    movieProps = regionprops(binaryLabelArray(:,:,nofr),'Centroid');
     for labelNumber = 1:((length([movieProps.Centroid]))/2)
         movieFrames(:,:,:,nofr) = insertText(movieFrames(:,:,:,nofr), movieProps(labelNumber).Centroid, labelNumber, 'BoxColor', [255,255,255]);
     end
@@ -53,9 +53,9 @@ end
 writer = VideoWriter(outputVideoName);
 writer.FrameRate = framerate;
 open(writer);
-for nofr = 1:nfrm_movie
-    waitbar(nofr/nfrm_movie, waitDialog, ...
-        strcat({'Writing frame'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(nfrm_movie)));
+for nofr = 1:blSize(3)
+    waitbar(nofr/blSize(3), waitDialog, ...
+        strcat({'Writing frame'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(blSize(3))));
     writeVideo(writer, im2frame(movieFrames(:,:,:,nofr)));
     
 end

@@ -247,7 +247,7 @@ for column = 1:size(position,2)
 end
 scaledPos = horzcat(((1:nfrm_movie)/vr.FrameRate)', scaledPos);
 % correct spurious points
-scaledPos = distFilter(scaledPos, 0.25);
+scaledPos = distFilter(scaledPos, 0.1);
 scaledPos = interpolatePos(scaledPos, 0.1);
 scaledPos = scaledPos(1:nfrm_movie-5,:);
 

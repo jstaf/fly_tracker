@@ -1,5 +1,13 @@
-inputFiles = {'track_compile_test1.csv'};
+% cat together a bunch of velocity files and run stats
 
+[video_name, pathname] = uigetfile({'*.csv;*', ...
+    'Comma-separated values (*.csv)'}, ...
+    'Select a set of flypath files (created by "larva_velocity.m")...', 'MultiSelect','on');
+if (pathname ~= 0)
+    inputFiles = strcat(pathname,video_name);
+else
+    break;
+end
 % This is the 'distance threshold' that you are examining (measured in cm). 
 % This script calculates what fraction of time the interfly distance was below this threshold.
 

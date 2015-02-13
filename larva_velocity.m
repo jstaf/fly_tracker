@@ -2,11 +2,20 @@
 
 %% initialize
 
-file_list = {'larvaTrack1.csv', 'larvaTrack1-1.csv'};
+[video_name, pathname] = uigetfile({'*.csv;*', ...
+    'Comma-separated values (*.csv)'}, ...
+    'Select a set of flypath files (created by "larva_tracker.m")...', 'MultiSelect','on');
+if (pathname ~= 0)
+    file_list = strcat(pathname,video_name);
+else
+    break;
+end
+
+%file_list = {'larvaTrack1.csv', 'larvaTrack1-1.csv'};
 
 % How long is the assay (in seconds)? If one of the csv files is shorter
 % than this, defaults to the shorter time.
-total_time = 120;
+total_time = 240;
 
 % What was your framerate? The Pentax cameras we use can capture at either 15 or 30 fps.
 framerate = 30;
@@ -73,8 +82,8 @@ meanVel = meanVel(1:max(lastIdx),:);
 
 figure('Name','Larva velocity');
 plot(meanVel);
-axis([0 size(meanVel,1)+5 0 max(meanVel(:)+0.1)])
-xlabel('Time(s)', 'fontsize', 11);
+axis([0 size(meanVel,1)+5 0 max(meanVel(:)*1.5)])
+xlabel('Time (s)', 'fontsize', 11);
 ylabel('Velocity (mm/s)', 'fontsize', 11);
 
 %% write data to disk

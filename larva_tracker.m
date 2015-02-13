@@ -1,6 +1,13 @@
 %% initialize settings
 
-video_name = 'IMGP0271.AVI';
+[video_name, pathname] = uigetfile({'*.avi;*.mj2;*.mpg;*.mp4;*.m4v;*.mov', ...
+    'Video Files (*.avi;*.mj2;*.mpg;*.mp4;*.m4v;*.mov)'}, ...
+    'Select a video to analyze...', 'MultiSelect','off');
+if (pathname ~= 0)
+    video_name = strcat(pathname,video_name);
+else
+    break;
+end
 
 % A decimal value used during background subtraction. A typical value would
 % be from -0.1 to 0.1. Can be negative. The higher this value, the more

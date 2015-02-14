@@ -1,4 +1,4 @@
-% cat together a bunch of velocity files and run stats
+%% cat together a bunch of velocity files and run stats
 
 [video_name, pathname] = uigetfile({'*.csv;*', ...
     'Comma-separated values (*.csv)'}, ...
@@ -8,10 +8,6 @@ if (pathname ~= 0)
 else
     break;
 end
-% This is the 'distance threshold' that you are examining (measured in cm). 
-% This script calculates what fraction of time the interfly distance was below this threshold.
-
-%% read the files, calculate time interfly disance is within a certain 'distThresh' of each other.
 
 %read file and calculate stats for each...
 if (isa(inputFiles,'char'))
@@ -24,13 +20,17 @@ for fileNum = 1:num_files
     rep_new = csvread(char(inputFiles(fileNum)));
     
     %calc avg velocity
-    avgVel = mean(rep_new,1)';
+    avgVel = zeros(size(rep_new,2),1);
+    for col = 1:size(rep_new,2)
+        velData = rep_new(:,col);
+        avgVel(col) = mean(velData(~isnan(velData)));
+    end
     plotData((1:length(avgVel)),fileNum) = avgVel;
 end
 
 %% now make a box plot
 
-figure('Name', strcat('Average fractional time interfly distance was below the threshold'));
+figure('Name', strcat('Velocity'));
 plotLabel = inputFiles;
 % remove the path from the labels, if present
 for barNum = 1:length(plotLabel)
@@ -54,5 +54,5 @@ for barNum = 1:length(plotLabel)
 end
 boxplot(plotData, ...
     'labels', plotLabel);
-ylim([0 max(max(plotData)) + 0.1]);
+ylim([0 (max(max(plotData)) + 0.1)]);
 ylabel(strcat('Average velocity (mm/s) '), 'fontsize', 11);

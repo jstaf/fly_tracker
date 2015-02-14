@@ -65,7 +65,8 @@ for index = 1:num_files
         %compute average velocity
         for second = 1:seconds
             velData = velocity((second*framerate)-29:second*framerate);
-            meanVel(second,larvaNum) = mean(velData(~isnan(velData)));
+            meanVel(second,larvaNum) = mean(velData);
+            %meanVel(second,larvaNum) = mean(velData(~isnan(velData)));
         end
         larvaNum = larvaNum + 1;
     end
@@ -85,6 +86,8 @@ plot(meanVel);
 axis([0 size(meanVel,1)+5 0 max(meanVel(:)*1.5)])
 xlabel('Time (s)', 'fontsize', 11);
 ylabel('Velocity (mm/s)', 'fontsize', 11);
+
+legend(video_name, 'location', 'NorthWest');
 
 %% write data to disk
 

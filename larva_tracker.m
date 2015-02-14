@@ -15,7 +15,7 @@ end
 threshOffset = 0;
 
 % Diameter of the circular arena we are using (in cm).
-arenaSize = 6;
+arenaSize = 8.5;
 
 % Don't touch this variable for now.
 numLarvae = 1;
@@ -38,22 +38,22 @@ close gcf;
 
 disp('Calculating image background.');
 
-% Pick a random set of 100 frames to create the background.
-bg_number = 100;
-randv = rand(bg_number,1);
-bg_idx = sort(round(randv * nfrm_movie));
+    % Pick a random set of 100 frames to create the background.
+    bg_number = 100;
+    randv = rand(bg_number,1);
+    bg_idx = sort(round(randv * nfrm_movie));
+    
+    % Read each frame of the background and average them to create a background
+    % image.
+    bg_array = zeros(resolution(2), resolution(1), bg_number, 'uint8');
+    for bg_step = 1:bg_number
+        bg_frame = rgb2gray(read(vr, bg_idx(bg_step)));
+        bg_array(:,:,bg_step) = bg_frame;
+    end
+    background =  uint8(mean(bg_array, 3));
+    background = imcrop(background, ROI);
+    
 
-% Read each frame of the background and average them to create a background
-% image.
-bg_array = zeros(resolution(2), resolution(1), bg_number, 'uint8');
-bg_step = 0;
-while bg_step < bg_number
-    bg_step = bg_step + 1;
-    bg_frame = rgb2gray(read(vr, bg_idx(bg_step)));
-    bg_array(:,:,bg_step) = bg_frame;
-end
-background =  uint8(mean(bg_array, 3));
-background = imcrop(background, ROI);
 
 %% create a binary map from each frame
 
@@ -64,22 +64,31 @@ for nofr = 1:nfrm_movie
     waitbar(nofr/nfrm_movie, waitDialog, ...
         strcat({'Creating binary maps from frame'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(nfrm_movie)));
     
-    % Extract image from video.
+    % Extract image from video. 
     frameInt = rgb2gray(read(vr, nofr));
     frame = imcrop(frameInt, ROI);
     
     % Subtract image background.
-    frame = frame - background;
+    frame = frame - background; 
     
     % Threshold image.
     thresh = graythresh(frame) + threshOffset; % otsu's method + an offset
+    if (thresh < 0)
+        thresh = 0.01;
+    end
     frame_thresh = medfilt2(im2bw(frame, thresh));
     
-    % Check to see if the threshold is too low, recalculate frame with
-    % higher threshold if yes.
+    % Check to see if the threshold is too high/low, recalculate frame with
+    % different threshold if yes.
     check = regionprops(frame_thresh, 'Area');
-    if length([check.Area]) > (numLarvae + 5)
+    if (length([check.Area]) > numLarvae + 5)
         thresh = thresh + 0.15;
+        frame_thresh = medfilt2(im2bw(frame, thresh));
+    elseif (length([check.Area]) < numLarvae)
+        thresh = thresh - 0.05;
+        if (thresh < 0)
+            thresh = 0.01;
+        end
         frame_thresh = medfilt2(im2bw(frame, thresh));
     end
     
@@ -176,12 +185,15 @@ for nofr = 1:nfrm_movie
             [minDist, idx] = min(dist);
             regions(i).lastLabelIdx = idx;
         end
-    
-        [temp, idx] = sort([regions.lastLabelIdx]);
-        regions = regions(idx);
+        
+        if (~isempty(regions))
+            [temp, idx] = sort([regions.lastLabelIdx]);
+            regions = regions(idx);
+        end
     end
     
-    if regionsLength < numLarvae % if missing larvae
+    
+    if length([regions.Area]) < numLarvae % if missing larvae
         % TODO find regions larger than larva are supposed to be
         % count those regions twice or subtract last frame
         %largestRegion = 
@@ -192,7 +204,7 @@ for nofr = 1:nfrm_movie
 %         if regionsLength < length([lastRegions.Area])
 %             % two larva just touched last frame
 %         end
-    elseif regionsLength > numLarvae % we've likely picked up noise
+    elseif length([regions.Area]) > numLarvae % we've likely picked up noise
         % TODO pick the areas closest to last size and position
         % areas furthest from last size should be last in our sorted
         % regions1:numLarvae

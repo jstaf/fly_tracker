@@ -59,6 +59,9 @@ for index = 1:num_files
     end
 end
 
+% remove any absurd velocities (in this case over 1cm/s)
+meanVel(meanVel > 10) = NaN;
+
 % find last datapoint and cut array down to size
 lastIdx = zeros(size(meanVel,2),1);
 for col = 1:size(meanVel,2)

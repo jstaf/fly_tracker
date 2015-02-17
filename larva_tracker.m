@@ -4,7 +4,7 @@
 % means that every 15 frames are analyzed out of our video.
 fs = 15;
 
-sizeThresh = 20;
+sizeThresh = 25;
 
 % A decimal value used during background subtraction. A typical value would
 % be from -0.1 to 0.1. Can be negative. The higher this value, the more
@@ -37,7 +37,7 @@ nfrm_movie = floor(vr.Duration * vr.FrameRate);
 disp('Click and drag to define a rectangular region of interest, double-click to proceed.');
 figure('name', 'ROI select'), imshow(read(vr, 1));
 ROI_select = imrect;
-ROI = wait(ROI_select); %ROI takes form of [xmin ymin width height]
+ROI = round(wait(ROI_select)); %ROI takes form of [xmin ymin width height]
 close gcf;
 if isempty(ROI)
     break;
@@ -241,8 +241,11 @@ for column = 1:size(position,2)
 end
 scaledPos = horzcat( ((0:fs:(nfrm_movie-1))/round(vr.FrameRate))', scaledPos);
 % correct spurious points
-scaledPos = distFilter(scaledPos, 0.25);
-scaledPos = interpolatePos(scaledPos, 0.25);
+scaledPos = distFilter(scaledPos, 0.5);
+if (0.25 < pdist2(scaledPos(1,1:2), scaledPos(2,1:2))) % a bit placeholder-y
+    scaledPos(1,1:2) = NaN;
+end
+scaledPos = interpolatePos(scaledPos, 0.05);
 
 figure('Name','Pathing map');
 lineColor = ['b','g','r','c','m','y'];

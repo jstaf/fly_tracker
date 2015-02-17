@@ -9,6 +9,10 @@ else
     break;
 end
 
+% Controls how far apart the frames we are analyzing. Setting 'fs' to 15
+% means that every 15 frames are analyzed out of our video.
+fs = 15;
+
 % A decimal value used during background subtraction. A typical value would
 % be from -0.1 to 0.1. Can be negative. The higher this value, the more
 % severely objects are thresholded.
@@ -33,40 +37,38 @@ figure('name', 'ROI select'), imshow(read(vr, 1));
 ROI_select = imrect;
 ROI = wait(ROI_select); %ROI takes form of [xmin ymin width height]
 close gcf;
+if isempty(ROI)
+    break;
+end
 
 %% create a background
 
-disp('Calculating image background.');
+% Pick a random set of 100 frames to create the background.
+bg_number = 100;
+randv = rand(bg_number,1);
+bg_idx = sort(round(randv * nfrm_movie));
 
-    % Pick a random set of 100 frames to create the background.
-    bg_number = 100;
-    randv = rand(bg_number,1);
-    bg_idx = sort(round(randv * nfrm_movie));
-    
-    % Read each frame of the background and average them to create a background
-    % image.
-    bg_array = zeros(resolution(2), resolution(1), bg_number, 'uint8');
-    for bg_step = 1:bg_number
-        bg_frame = rgb2gray(read(vr, bg_idx(bg_step)));
-        bg_array(:,:,bg_step) = bg_frame;
-    end
-    background =  uint8(mean(bg_array, 3));
-    background = imcrop(background, ROI);
-    
-
+% Read each frame of the background and average them to create a background
+% image.
+bg_array = zeros(resolution(2), resolution(1), bg_number, 'uint8');
+for bg_step = 1:bg_number
+    bg_frame = rgb2gray(read(vr, bg_idx(bg_step)));
+    bg_array(:,:,bg_step) = bg_frame;
+end
+background =  uint8(mean(bg_array, 3));
+background = imcrop(background, ROI);
 
 %% create a binary map from each frame
 
 %process frames of video for fly
-binaryMap = false(ROI(4)+1, ROI(3)+1 ,nfrm_movie);
+binaryMap = false(ROI(4)+1, ROI(3)+1 ,ceil(nfrm_movie/fs));
 waitDialog = waitbar(0, 'Creating binary maps from video...');
-for nofr = 1:nfrm_movie
+for nofr = 1:fs:nfrm_movie
     waitbar(nofr/nfrm_movie, waitDialog, ...
         strcat({'Creating binary maps from frame'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(nfrm_movie)));
     
     % Extract image from video. 
-    frameInt = rgb2gray(read(vr, nofr));
-    frame = imcrop(frameInt, ROI);
+    frame = imcrop(rgb2gray(read(vr, nofr)), ROI);
     
     % Subtract image background.
     frame = frame - background; 
@@ -93,19 +95,20 @@ for nofr = 1:nfrm_movie
     end
     
     % Dump image to binaryVideo for later separation
-    binaryMap(:,:,nofr) = frame_thresh;
+    binaryMap(:,:,ceil(nofr/fs)) = frame_thresh;
 end
 close(waitDialog);
 
 %% label and analyze binary maps
 
-position = zeros(nfrm_movie, numLarvae*2);
+position = zeros(ceil(nfrm_movie/fs), numLarvae*2);
 
 waitDialog = waitbar(0, 'Analyzing maps...');
 binaryLabel = zeros(size(binaryMap), 'uint8');
-for nofr = 1:nfrm_movie
-    waitbar(nofr/nfrm_movie, waitDialog, ...
-        strcat({'Analyzing map'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(nfrm_movie)));
+arraysz = size(binaryMap,3);
+for nofr = 1:arraysz
+    waitbar(nofr/arraysz, waitDialog, ...
+        strcat({'Analyzing map'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(arraysz)));
     
     % label regions and compute region properties
     binaryLabel(:,:,nofr) = bwlabel(binaryMap(:,:,nofr),4);
@@ -113,7 +116,7 @@ for nofr = 1:nfrm_movie
     
     % small regions (not larvae) are filtered out of our data
     regionNum = 1;
-    while (regionNum < length([regions.Area]))
+    while (regionNum <= length([regions.Area]))
         % arbitrary threshold- larvae are about twice this size
         if (regions(regionNum).Area < 40) 
             % unlabel piimellipsexels in small regions
@@ -220,7 +223,8 @@ for nofr = 1:nfrm_movie
                     regions(reg).PixelList(pixRow,1), nofr) ...
                     = 0;
             end
-            % now delete the entry
+         binaryLabel = zeros(size(binaryMap), 'uint8');
+   % now delete the entry
             regions(reg) = []; 
         end
     end
@@ -238,7 +242,7 @@ for nofr = 1:nfrm_movie
     
     % extract positions
     if (skip)
-        position(nofr,:) = NaN; %placeholder
+        position(ceil(nofr/fs),:) = NaN; %placeholder
         skip = false;
     else
         centroid = [regions.Centroid]';
@@ -264,11 +268,10 @@ for column = 1:size(position,2)
         scaledPos(:,column) = position(:,column)*yscale;
     end
 end
-scaledPos = horzcat(((1:nfrm_movie)/vr.FrameRate)', scaledPos);
+scaledPos = horzcat( ((0:fs:(nfrm_movie-1))/round(vr.FrameRate))', scaledPos);
 % correct spurious points
-scaledPos = distFilter(scaledPos, 0.1);
-scaledPos = interpolatePos(scaledPos, 0.1);
-scaledPos = scaledPos(1:nfrm_movie-5,:);
+scaledPos = distFilter(scaledPos, 0.25);
+scaledPos = interpolatePos(scaledPos, 0.25);
 
 figure('Name','Pathing map');
 lineColor = ['b','g','r','c','m','y'];

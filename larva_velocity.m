@@ -17,9 +17,6 @@ end
 % than this, defaults to the shorter time.
 total_time = 240;
 
-% What was your framerate? The Pentax cameras we use can capture at either 15 or 30 fps.
-framerate = 30;
-
 %% read files and assemble into array
 
 if (isa(file_list,'char'))
@@ -30,7 +27,6 @@ disp(strcat(num2str(num_files), ' files selected for analysis.'));
 
 % calculate mean velocity per second for each replicate
 seconds = floor(total_time);
-velocity = zeros(seconds*framerate,1);
 meanVel = zeros(seconds,num_files);
 meanVel(:) = NaN;
 larvaNum = 1;
@@ -49,25 +45,22 @@ for index = 1:num_files
     end
     
     % calc velocities
-    velocity(:) = NaN; % needs to be reset to original state
+    dataRate = round(1/replicate(2,1));
+    velocity = zeros(seconds,1);
+    velocity(:) = NaN;
     for animal = 1:2:(size(replicate,2)-1)
-        % calculate velocity for each animal
-        for row = 2:num_rows
-            % the '10 * ' converts to mm/s
-            velocity(row,:) = 10 * pdist2( ...
+        % calculate velocity/s for each animal
+        for row = 1:dataRate:(size(replicate,1)-dataRate)
+            % the '10 * ' converts to mm/s (coordinates are in cm)
+            velocity(floor(row/dataRate)+1) = 10 * pdist2( ...
                 [replicate(row,animal+1), replicate(row,animal+2)], ...
-                [replicate(row-1,animal+1), replicate(row-1,animal+2)]);
+                [replicate(row+dataRate,animal+1), replicate(row+dataRate,animal+2)]);
         end
         
         % filter out absurd velocities
-        velocity(velocity > 0.5) = NaN;
+        %velocity(velocity > 2) = NaN;
         
-        %compute average velocity
-        for second = 1:seconds
-            velData = velocity((second*framerate)-29:second*framerate);
-            meanVel(second,larvaNum) = mean(velData);
-            %meanVel(second,larvaNum) = mean(velData(~isnan(velData)));
-        end
+        meanVel(:,larvaNum) = velocity;
         larvaNum = larvaNum + 1;
     end
 end

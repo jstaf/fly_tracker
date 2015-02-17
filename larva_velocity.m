@@ -2,22 +2,20 @@
 
 %% initialize
 
-[video_name, pathname] = uigetfile({'*.csv;*', ...
-    'Comma-separated values (*.csv)'}, ...
-    'Select a set of flypath files (created by "larva_tracker.m")...', 'MultiSelect','on');
-if (pathname ~= 0)
-    file_list = strcat(pathname,video_name);
-else
-    break;
-end
-
-%file_list = {'larvaTrack1.csv', 'larvaTrack1-1.csv'};
-
 % How long is the assay (in seconds)? If one of the csv files is shorter
 % than this, defaults to the shorter time.
 total_time = 240;
 
 %% read files and assemble into array
+
+[file_name, pathname] = uigetfile({'*.csv;*', ...
+    'Comma-separated values (*.csv)'}, ...
+    'Select a set of flypath files (created by "larva_tracker.m")...', 'MultiSelect','on');
+if (pathname ~= 0)
+    file_list = strcat(pathname,file_name);
+else
+    break;
+end
 
 if (isa(file_list,'char'))
     file_list = {file_list};
@@ -56,10 +54,6 @@ for index = 1:num_files
                 [replicate(row,animal+1), replicate(row,animal+2)], ...
                 [replicate(row+dataRate,animal+1), replicate(row+dataRate,animal+2)]);
         end
-        
-        % filter out absurd velocities
-        %velocity(velocity > 2) = NaN;
-        
         meanVel(:,larvaNum) = velocity;
         larvaNum = larvaNum + 1;
     end
@@ -80,7 +74,18 @@ axis([0 size(meanVel,1)+5 0 max(meanVel(:)*1.5)])
 xlabel('Time (s)', 'fontsize', 11);
 ylabel('Velocity (mm/s)', 'fontsize', 11);
 
-legend(video_name, 'location', 'NorthWest');
+
+for barNum = 1:length(file_name)
+    barLabel = char(file_name(barNum));
+    ind = strfind(barLabel, '.csv');
+    if isempty(ind)
+        file_name(barNum) = {barLabel};
+    else
+        file_name(barNum) = {barLabel(1:ind(length(ind))-1)};
+    end
+end
+
+legend(file_name, 'location', 'NorthWest');
 
 %% write data to disk
 

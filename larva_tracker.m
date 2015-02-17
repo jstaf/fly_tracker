@@ -1,17 +1,10 @@
 %% initialize settings
 
-[video_name, pathname] = uigetfile({'*.avi;*.mj2;*.mpg;*.mp4;*.m4v;*.mov', ...
-    'Video Files (*.avi;*.mj2;*.mpg;*.mp4;*.m4v;*.mov)'}, ...
-    'Select a video to analyze...', 'MultiSelect','off');
-if (pathname ~= 0)
-    video_name = strcat(pathname,video_name);
-else
-    break;
-end
-
 % Controls how far apart the frames we are analyzing. Setting 'fs' to 15
 % means that every 15 frames are analyzed out of our video.
 fs = 15;
+
+sizeThresh = 20;
 
 % A decimal value used during background subtraction. A typical value would
 % be from -0.1 to 0.1. Can be negative. The higher this value, the more
@@ -25,6 +18,15 @@ arenaSize = 8.5;
 numLarvae = 1;
 
 %% open video
+
+[video_name, pathname] = uigetfile({'*.avi;*.mj2;*.mpg;*.mp4;*.m4v;*.mov', ...
+    'Video Files (*.avi;*.mj2;*.mpg;*.mp4;*.m4v;*.mov)'}, ...
+    'Select a video to analyze...', 'MultiSelect','off');
+if (pathname ~= 0)
+    video_name = strcat(pathname,video_name);
+else
+    break;
+end
 
 disp(strcat('Opening', {' '}, video_name, ', please wait.'));
 vr = VideoReader(video_name);
@@ -118,7 +120,7 @@ for nofr = 1:arraysz
     regionNum = 1;
     while (regionNum <= length([regions.Area]))
         % arbitrary threshold- larvae are about twice this size
-        if (regions(regionNum).Area < 40) 
+        if (regions(regionNum).Area < sizeThresh) 
             % unlabel piimellipsexels in small regions
             for pixRow = 1:size(regions(regionNum).PixelList,1);
                 binaryLabel( ...
@@ -136,46 +138,15 @@ for nofr = 1:arraysz
     % re-count and label regions
     regionsLength = length([regions.Area]);
     if (nofr == 1)
-        % relabel regions not detected in first frame
-        if regionsLength < numLarvae
-            for i = 1:numLarvae-regionsLength
-                % create a selection mask
-                figure('name', 'Select regions in contact'), imshow(binaryMap(:,:,1));
-                polyHandle = impoly;
-                wait(polyHandle);
-                mask = createMask(polyHandle);
-                close gcf;
-                
-                % Retrieve indices of pixels in mask and determine label
-                maskProps = regionprops(mask, 'PixelIdxList');
-                tempImg = binaryLabel(:,:,1);
-                
-                % What is the region labeled?
-                labelArray = tempImg(maskProps.PixelIdxList);
-                label = round(mean(labelArray(labelArray ~= 0)));
-                % Create "numerical space" for a new region.
-                tempImg(tempImg>label) = tempImg(tempImg>label) +1;
-                % now divide and relabel region in half according to mask
-                for pixel = 1:length(maskProps.PixelIdxList)
-                    if (tempImg(maskProps.PixelIdxList(pixel)) ~= 0)
-                        tempImg(maskProps.PixelIdxList(pixel)) = label + 1;
-                    end
-                end
-                
-                % replace frame
-                binaryLabel(:,:,1) = tempImg;
-            end
-            %update regions
-            regions = regionprops(binaryLabel(:,:,1),'Area', 'Centroid', 'PixelList');
-            regionsLength = length([regions.Area]);
-        end
         % sort regions by euclidean distance to (0,0)
         for i = 1:regionsLength
             regions(i).DistToOrigin = sqrt(regions(i).Centroid(1)^2 + regions(i).Centroid(2)^2);
         end
-        [temp, idx] = sort([regions.DistToOrigin]);
-        regions = regions(idx);
-        skip = false;
+        if ~isempty(regions)
+            [temp, idx] = sort([regions.DistToOrigin]);
+            regions = regions(idx);
+            skip = false;
+        end
     else
         % sort regions based on proximity to last labeled regions
         for i = 1:length([regions.Area])

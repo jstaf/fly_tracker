@@ -48,7 +48,9 @@ for nofr = 1:blSize(3)
     % add text labels
     movieProps = regionprops(binaryLabelArray(:,:,nofr),'Centroid');
     for labelNumber = 1:((length([movieProps.Centroid]))/2)
-        movieFrame = insertText(movieFrame, movieProps(labelNumber).Centroid, labelNumber, 'BoxColor', [255,255,255]);
+        if isfinite(movieProps(labelNumber).Centroid)
+            movieFrame = insertText(movieFrame, movieProps(labelNumber).Centroid, labelNumber, 'BoxColor', [255,255,255]);
+        end
     end
     writeVideo(writer, im2frame(movieFrame));
 end

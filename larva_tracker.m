@@ -4,7 +4,7 @@
 % means that every 15 frames are analyzed out of our video.
 fs = 15;
 
-sizeThresh = 25;
+sizeThresh = 15;
 
 % A decimal value used during background subtraction. A typical value would
 % be from -0.1 to 0.1. Can be negative. The higher this value, the more
@@ -14,8 +14,18 @@ threshOffset = 0;
 % Diameter of the circular arena we are using (in cm).
 arenaSize = 8.5;
 
+% Change to true if the larva is a dark spot on a light surface.
+invert = true;
+
+% A crude way of improving contrast. Values from 2-5 seem to work well.
+contrast = 3;
+
 % Don't touch this variable for now.
 numLarvae = 1;
+
+% debugging only
+makeVideo = false;
+rawVideoName = 'raw_frames_highest2.avi';
 
 %% open video
 
@@ -59,12 +69,23 @@ for bg_step = 1:bg_number
 end
 background =  uint8(mean(bg_array, 3));
 background = imcrop(background, ROI);
+if (invert)
+    background = 255 - background;
+end
 
 %% create a binary map from each frame
 
 %process frames of video for fly
 binaryMap = false(ROI(4)+1, ROI(3)+1 ,ceil(nfrm_movie/fs));
 waitDialog = waitbar(0, 'Creating binary maps from video...');
+
+if (makeVideo)
+    writer = VideoWriter(rawVideoName);
+    writer.FrameRate = 30/fs;
+    open(writer);
+    movieFrame = zeros(ROI(4)+1, ROI(3)+1, 3, 'uint8');
+end
+
 for nofr = 1:fs:nfrm_movie
     waitbar(nofr/nfrm_movie, waitDialog, ...
         strcat({'Creating binary maps from frame'},{' '}, num2str(nofr), {' '}, {'of'}, {' '}, num2str(nfrm_movie)));
@@ -73,7 +94,14 @@ for nofr = 1:fs:nfrm_movie
     frame = imcrop(rgb2gray(read(vr, nofr)), ROI);
     
     % Subtract image background.
-    frame = frame - background; 
+    if (invert)
+        frame = 255 - frame - background;    
+    else
+        frame = frame - background; 
+    end
+    
+    % contrast adjustment 
+    frame = frame * contrast;
     
     % Threshold image.
     thresh = graythresh(frame) + threshOffset; % otsu's method + an offset
@@ -98,8 +126,19 @@ for nofr = 1:fs:nfrm_movie
     
     % Dump image to binaryVideo for later separation
     binaryMap(:,:,ceil(nofr/fs)) = frame_thresh;
+    
+    if (makeVideo)
+        for channel = 1:3
+            movieFrame(:,:,channel) = frame;
+        end
+        writeVideo(writer, im2frame(movieFrame));
+    end
 end
 close(waitDialog);
+
+if (makeVideo)
+    close(writer);
+end
 
 %% label and analyze binary maps
 
@@ -138,12 +177,9 @@ for nofr = 1:arraysz
     % re-count and label regions
     regionsLength = length([regions.Area]);
     if (nofr == 1)
-        % sort regions by euclidean distance to (0,0)
-        for i = 1:regionsLength
-            regions(i).DistToOrigin = sqrt(regions(i).Centroid(1)^2 + regions(i).Centroid(2)^2);
-        end
+        % sort regions by size
         if ~isempty(regions)
-            [temp, idx] = sort([regions.DistToOrigin]);
+            [temp, idx] = sort([regions.Area], 'descend');
             regions = regions(idx);
             skip = false;
         end
@@ -162,7 +198,9 @@ for nofr = 1:arraysz
         
         if (~isempty(regions))
             [temp, idx] = sort([regions.lastLabelIdx]);
-            regions = regions(idx);
+            if (~isempty(idx))
+                regions = regions(idx);
+            end
         end
     end
     
@@ -201,7 +239,7 @@ for nofr = 1:arraysz
     end
     
     % change the value of every labeled pixel to the new value (based on
-    % sort order)
+    % sort order)teleDistThreshold
     for newLabel = 1:length([regions.Area])
         for pixRow = 1:size(regions(newLabel).PixelList,1);
             binaryLabel( ...
@@ -213,7 +251,7 @@ for nofr = 1:arraysz
     
     % extract positions
     if (skip)
-        position(ceil(nofr/fs),:) = NaN; %placeholder
+        position(ceil(nofr),:) = NaN; %placeholder
         skip = false;
     else
         centroid = [regions.Centroid]';
@@ -242,18 +280,18 @@ end
 scaledPos = horzcat( ((0:fs:(nfrm_movie-1))/round(vr.FrameRate))', scaledPos);
 % correct spurious points
 scaledPos = distFilter(scaledPos, 0.5);
-if (0.25 < pdist2(scaledPos(1,1:2), scaledPos(2,1:2))) % a bit placeholder-y
-    scaledPos(1,1:2) = NaN;
-end
-scaledPos = interpolatePos(scaledPos, 0.05);
+scaledPos = interpolatePos(scaledPos, 0.25);
 
 figure('Name','Pathing map');
-lineColor = ['b','g','r','c','m','y'];
-hold on;
-for i = 2:2:size(scaledPos,2)-1
-    plot(scaledPos(:,i), scaledPos(:,i+1), lineColor(mod(i/2,6)));
-end
-hold off;
+x = scaledPos(:,2)';
+y = scaledPos(:,3)';
+z = zeros(size(x));
+col = scaledPos(:,1)'; 
+surface([x;x],[y;y],[z;z],[col;col],...
+        'facecol','no',...
+        'edgecol','interp',...
+        'linew',2, ...
+        'LineSmoothing','on');
 xlabel('X-coordinate (cm)', 'fontsize', 11);
 ylabel('Y-coordinate (cm)', 'fontsize', 11);
 axis([0 arenaSize 0 arenaSize], 'equal', 'manual')

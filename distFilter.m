@@ -32,6 +32,15 @@ for dim = 2:2:size(array,2)-1
         end
     end
 end
+% be more stringent with the start and end (there's usually more errors
+% there)
+for check = [1:5,size(array,1)-5:size(array,1)-1]
+    if (teleDistThreshold/2 < pdist2(array(check,2:3), array(check+1 ,2:3))) % a bit placeholder-y
+        array(check,2:3) = NaN;
+        teleFiltNum = teleFiltNum + 1;
+    end
+end
+
 disp(strcat(num2str(teleFiltNum), {' '}, 'points removed by the telportation filter.'));
 
 return;

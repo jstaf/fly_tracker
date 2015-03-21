@@ -59,7 +59,7 @@ for index = 1:num_files
     end
 end
 
-% remove any absurd velocities (in this case over 1cm/s)
+% remove any absurd velocities that aren't actually possible (in this case over 1 cm/s)
 meanVel(meanVel > 10) = NaN;
 
 % find last datapoint and cut array down to size
@@ -72,7 +72,7 @@ meanVel = meanVel(1:max(lastIdx),:);
 %% plot data
 
 figure('Name','Larva velocity');
-plot(meanVel);
+plot(meanVel, 'linew', 1.5, 'LineSmoothing','on');
 axis([0 size(meanVel,1)+5 0 max(meanVel(:)*1.5)])
 xlabel('Time (s)', 'fontsize', 11);
 ylabel('Velocity (mm/s)', 'fontsize', 11);

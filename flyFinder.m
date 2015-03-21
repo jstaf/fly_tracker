@@ -1,4 +1,4 @@
-function [fr_position] = flyFinder(ROI_image, search_size, threshold)
+function [fr_position] = flyFinder(ROI_image, search_size, threshold, flip)
 
 %flyFinder
 %
@@ -11,8 +11,12 @@ function [fr_position] = flyFinder(ROI_image, search_size, threshold)
 % after inverting image intensities.
 
 % Locate darkest pixel.
-minValue = min(ROI_image(:));
-[ypos, xpos] = find(ROI_image == minValue);
+if flip
+    val = min(ROI_image(:));
+else
+    val = max(ROI_image(:));
+end
+[ypos, xpos] = find(ROI_image == val);
 xpos = mean(xpos);
 ypos = mean(ypos);
 
@@ -41,7 +45,9 @@ bounds = [leftEdge rightEdge topEdge bottomEdge];
 search_area = ROI_image(bounds(3):bounds(4), bounds(1):bounds(2));
 
 % "Flip" image to be white pixels on black.
-search_area = double(255 - search_area);
+if flip == true
+    search_area = double(255 - search_area);
+end
 x2 = [1:length(search_area(1,:))]';
 y2 = [1:length(search_area(:,1))]';
 total = sum(sum(search_area));

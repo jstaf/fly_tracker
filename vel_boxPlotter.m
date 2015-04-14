@@ -46,7 +46,7 @@ if (num_files == 2)
     x = x(~isnan(x));
     y = plotData(:,2);
     y = y(~isnan(y));
-    [handle, pval, conf_int, stats] = ttest2(x,y);
+    [decision, pval, conf_int, stats] = ttest2(x,y);
     if (pval <= 0.05)
         disp(strcat('Null hypothesis rejected, p-value =', {' '}, num2str(pval)));
     else

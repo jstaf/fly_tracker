@@ -279,7 +279,7 @@ for column = 1:size(position,2)
 end
 scaledPos = horzcat( ((0:fs:(nfrm_movie-1))/round(vr.FrameRate))', scaledPos);
 % correct spurious points
-scaledPos = distFilter(scaledPos, 0.5);
+scaledPos = distFilter(scaledPos, 1.0);
 scaledPos = interpolatePos(scaledPos, 0.25);
 
 figure('Name','Pathing map');

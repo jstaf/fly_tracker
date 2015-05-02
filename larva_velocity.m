@@ -4,7 +4,7 @@
 
 % How long is the assay (in seconds)? If one of the csv files is shorter
 % than this, defaults to the shorter time.
-total_time = 240;
+total_time = 90;
 
 %% read files and assemble into array
 
@@ -54,7 +54,11 @@ for index = 1:num_files
                 [replicate(row,animal+1), replicate(row,animal+2)], ...
                 [replicate(row+dataRate,animal+1), replicate(row+dataRate,animal+2)]);
         end
-        meanVel(:,larvaNum) = velocity;
+        if (length(velocity) > total_time)
+            meanVel(:,larvaNum) = velocity(1:total_time);
+        else
+            meanVel(:,larvaNum) = velocity;
+        end
         larvaNum = larvaNum + 1;
     end
 end
@@ -65,7 +69,14 @@ meanVel(meanVel > 10) = NaN;
 % find last datapoint and cut array down to size
 lastIdx = zeros(size(meanVel,2),1);
 for col = 1:size(meanVel,2)
-    lastIdx(col) = find(~isnan(meanVel(:,col)),1,'last');
+    lastNonNaN = find(~isnan(meanVel(:,col)),1,'last');
+    if (~isempty(lastNonNaN))
+        lastIdx(col) = find(~isnan(meanVel(:,col)),1,'last');
+    else
+        % change entire velocity to zero, the larva likely didn't move
+        meanVel(:,col) = 0;
+        lastIdx(col) = NaN;
+    end
 end
 meanVel = meanVel(1:max(lastIdx),:);
 
@@ -76,17 +87,6 @@ plot(meanVel, 'linew', 1.5, 'LineSmoothing','on');
 axis([0 size(meanVel,1)+5 0 max(meanVel(:)*1.5)])
 xlabel('Time (s)', 'fontsize', 11);
 ylabel('Velocity (mm/s)', 'fontsize', 11);
-
-
-for barNum = 1:length(file_name)
-    barLabel = char(file_name(barNum));
-    ind = strfind(barLabel, '.csv');
-    if isempty(ind)
-        file_name(barNum) = {barLabel};
-    else
-        file_name(barNum) = {barLabel(1:ind(length(ind))-1)};
-    end
-end
 
 legend(file_name, 'location', 'NorthWest');
 

@@ -4,7 +4,7 @@
 % means that every 15 frames are analyzed out of our video.
 fs = 15;
 
-sizeThresh = 15;
+sizeThresh = 10;
 
 % A decimal value used during background subtraction. A typical value would
 % be from -0.1 to 0.1. Can be negative. The higher this value, the more
@@ -12,20 +12,20 @@ sizeThresh = 15;
 threshOffset = 0;
 
 % Diameter of the circular arena we are using (in cm).
-arenaSize = 8.5;
+arenaSize = 14;
 
 % Change to true if the larva is a dark spot on a light surface.
 invert = true;
 
 % A crude way of improving contrast. Values from 2-5 seem to work well.
-contrast = 3;
+contrast = 4;
 
 % Don't touch this variable for now.
 numLarvae = 1;
 
 % debugging only
 makeVideo = false;
-rawVideoName = 'raw_frames_highest2.avi';
+rawVideoName = 'nullTest.avi';
 
 %% open video
 
@@ -280,7 +280,7 @@ end
 scaledPos = horzcat( ((0:fs:(nfrm_movie-1))/round(vr.FrameRate))', scaledPos);
 % correct spurious points
 scaledPos = distFilter(scaledPos, 1.0);
-scaledPos = interpolatePos(scaledPos, 0.25);
+scaledPos = interpolatePos(scaledPos, 0.5);
 
 figure('Name','Pathing map');
 x = scaledPos(:,2)';

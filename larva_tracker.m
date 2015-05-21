@@ -160,7 +160,7 @@ for nofr = 1:arraysz
     while (regionNum <= length([regions.Area]))
         % arbitrary threshold- larvae are about twice this size
         if (regions(regionNum).Area < sizeThresh) 
-            % unlabel piimellipsexels in small regions
+            % unlabel pixels in small regions
             for pixRow = 1:size(regions(regionNum).PixelList,1);
                 binaryLabel( ...
                     regions(regionNum).PixelList(pixRow,2), ...

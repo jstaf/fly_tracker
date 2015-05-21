@@ -6,12 +6,11 @@ start_delay = 30;
 
 %% cat together a bunch of velocity files and run stats
     
-[video_name, pathname] = uigetfile({'*.csv;*', ...
-    'Comma-separated values (*.csv)'}, ...
-    'Select a set of flypath files (created by "larva_velocity.m")...', 'MultiSelect','on');
-if (pathname ~= 0)
-    inputFiles = strcat(pathname,video_name);
+[video_name] = uipickfiles();
+if (~isempty(video_name))
+    inputFiles = video_name;
 else
+    disp('No files selected.');
     break;
 end
 
@@ -85,6 +84,7 @@ for barNum = 1:length(plotLabel)
     end
 end
 boxplot(plotData, ...
-    'labels', plotLabel);
+    'labels', plotLabel, ...
+    'grouporder', video_name);
 ylim([0 (max(max(plotData)) + 0.1)]);
 ylabel(strcat('Average velocity (mm/s) '), 'fontsize', 11);

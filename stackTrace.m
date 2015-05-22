@@ -18,27 +18,34 @@ end
 
 bounds = 5;
 
+% plot files individually
 handle = figure;
 % read files and plot trace
 colormap = jet(length(inputFiles));
 
-plotLabel = cleanLabels(inputFiles);
-
 hold on;
 for fileNum = 1:length(inputFiles)
     replicate = csvread(char(inputFiles(fileNum))); 
-    % normalize everything in relation to the first datapoint
+    % remove NaNs
     for col = 2:size(replicate,2)
         column = replicate(:, col);
         column = column(~isnan(column));
-        replicate(1:length(column),col) = column(:) - column(1);
-    end
+        replicate(1:length(column),col) = column;
+    end    
     replicate = replicate(1:length(column), :);
+    % preliminary filtering
+    replicate = distFilter(replicate, 2);
+    % normalize to first point
+    for col = 2:size(replicate,2)
+        replicate(:, col) = replicate(:, col) - replicate(1, col);
+    end
+    
     plot(replicate(:,2), replicate(:,3), ...
-        'linew', 2, 'LineSmoothing', 'on', ...
+        'linew', 1.5, 'LineSmoothing', 'on', ...
         'color', colormap(fileNum, :));
 end
-axis([-bounds bounds -bounds bounds]);
-legend(plotLabel, 'location', 'East');
-
 hold off;
+
+axis([-bounds bounds -bounds bounds], 'equal', 'manual');
+plotLabel = cleanLabels(inputFiles);
+legend(plotLabel, 'location', 'eastoutside');

@@ -4,12 +4,10 @@
 % (in seconds)
 start_delay = 30;
 
-%% cat together a bunch of velocity files and run stats
+%% select files
     
-[video_name] = uipickfiles();
-if (~isempty(video_name))
-    inputFiles = video_name;
-else
+[inputFiles] = uipickfiles();
+if (isempty(inputFiles))
     disp('No files selected.');
     break;
 end
@@ -18,23 +16,25 @@ if (start_delay == 0)
     start_delay = start_delay + 1;
 end
 
-%read file and calculate stats for each...
-if (isa(inputFiles,'char'))
-    inputFiles = {inputFiles};
-end
+%% read each file and calculate mean velocity
+
 num_files = length(inputFiles);
-plotData = zeros(100,num_files);
+plotData = zeros(100, num_files);
 plotData(:) = NaN;
 for fileNum = 1:num_files
     rep_new = csvread(char(inputFiles(fileNum)));
     
-    %calc avg velocity
-    avgVel = zeros(size(rep_new,2),1);
-    for col = 1:size(rep_new,2)
-        velData = rep_new(start_delay:size(rep_new,1),col);
-        avgVel(col) = mean(velData(~isnan(velData)));
+    % adjust start delay based on first time measurement in file
+    startDelFile = ceil(start_delay / rep_new(2, 1)) + 1;
+    
+    % calc avg velocity
+    avgVel = zeros(size(rep_new, 2) - 1, 1);
+    for col = 2:size(rep_new, 2)
+        velData = rep_new(startDelFile:size(rep_new, 1), col);
+        avgVel(col - 1) = mean(velData(~isnan(velData)));
     end
-    plotData((1:length(avgVel)),fileNum) = avgVel;
+    avgVel = avgVel(~isnan(avgVel));
+    plotData((1:length(avgVel)), fileNum) = avgVel;
 end
 
 %% lets do some stats
@@ -61,10 +61,44 @@ end
 
 %% now make a box plot
 
+% controls width of bars and jittering
+wide = 0.3;
+
 figure('Name', strcat('Velocity'));
+hold on;
+% plot data
+for col = 1:size(plotData, 2)
+    % generate plotMean and sem for column in question
+    dat = plotData(:, col);
+    dat = dat(~isnan(dat));
+    plotMean = mean(dat);
+    sem = std(dat)/sqrt(length(dat));
+    
+    % draw sem patch (Position = [x vert], [y vert], color)
+    % starts in lower left corner and goes clockwise
+    patch([col - wide, col - wide, col + wide, col + wide], ...
+        [plotMean - sem, plotMean + sem, plotMean + sem, plotMean - sem], ...
+        'r', 'FaceAlpha', 0.2, 'LineStyle', 'none');
+    
+    % draw mean line
+    plot([col - wide, col + wide], [plotMean, plotMean], ...
+        'linew', 2, ...
+        'color', [1, 0, 0]);
+    
+    % draw individual points
+    points = scatter(repmat(col, size(plotData, 1), 1), plotData(:, col), ...
+        45, [0.5, 0.5, 0.5], 'filled', ... % size, color, fill
+        'Jitter', 'on', 'JitterAmount', wide - 0.1);
+    % uistack(points, 'top');
+end
+hold off;
+
+% set axis and labels to use manual labels from file names
 plotLabel = cleanLabels(inputFiles);
-boxplot(plotData, ...
-    'labels', plotLabel, ...
-    'grouporder', video_name);
+set(gca, ...
+    'XLim', [0, size(plotData, 2) + 1], ...
+    'XTick', 1:size(plotData, 2), ...
+    'XTickLabel', plotLabel);
+% rotateXLabels(gca(), 45) % looks awful
 ylim([0 (max(max(plotData)) + 0.1)]);
 ylabel(strcat('Average velocity (mm/s) '), 'fontsize', 11);

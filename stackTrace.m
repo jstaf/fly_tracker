@@ -19,7 +19,7 @@ end
 bounds = 5;
 
 % plot files individually
-handle = figure;
+figure('Name', 'Stacked position traces');
 % read files and plot trace
 colormap = jet(length(inputFiles));
 

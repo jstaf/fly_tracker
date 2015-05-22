@@ -28,10 +28,11 @@ end
 num_files = size(file_list,2);
 disp(strcat(num2str(num_files), ' files selected for analysis.'));
 
-%% calculate mean velocity per second for each replicate
-
 % recalculate total time to total # of bins
 total_time = floor(total_time / binSize);
+
+%% calculate mean velocity per second for each replicate
+
 seconds = floor(total_time);
 meanVel = zeros(seconds, num_files);
 meanVel(:) = NaN;
@@ -95,19 +96,22 @@ for col = 1:size(meanVel,2)
         lastIdx(col) = NaN;
     end
 end
-meanVel = meanVel(1:max(lastIdx),:);
+meanVel = meanVel(1:max(lastIdx), :);
+
+% create a first column of timepoint labels
+plotData = horzcat((0:binSize:(size(meanVel,1) - 1) * binSize)', meanVel);
 
 %% plot data
 
 figure('Name','Larva velocity');
 colormap = jet(size(meanVel, 2));
 hold on;
-for col = 1:size(meanVel, 2)
-    plot((1:seconds) * binSize, meanVel(:, col), ...
-        'linew', 1.5, 'LineSmoothing', 'on', 'color', colormap(col, :));
+for col = 2:size(plotData, 2)
+    plot(plotData(:, 1), plotData(:, col), ...
+        'linew', 1.5, 'LineSmoothing', 'on', 'color', colormap(col - 1, :));
 end
 hold off;
-axis([0 ((size(meanVel,1) + 1) * binSize) 0 max(meanVel(:)*1.5)])
+axis([0 (plotData(end, 1) + binSize) 0 (max(max(meanVel)) * 1.5)])
 xlabel('Time (s)', 'fontsize', 11);
 ylabel('Average velocity (mm/s)', 'fontsize', 11);
 
@@ -117,7 +121,7 @@ legend(cleanLabels(file_list), 'location', 'NorthWest');
 
 [output_name,path] = uiputfile('.csv');
 if output_name ~= 0  % in case someone closes the file saving dialog
-    csvwrite(strcat(path,output_name), meanVel);
+    csvwrite(strcat(path,output_name), plotData);
 else
     disp('File saving cancelled.')
 end

@@ -9,7 +9,7 @@ total_time = 90;
 % Bin size for velocity calculations (in seconds). Velocity is calculated
 % once per "bin size" by comparing positions at the start and end. Cannot
 % be lower than the rate of data being analyzed (generally 0.5-1s).
-binSize = 5;
+binSize = 1;
 
 %% get file list
 
@@ -30,8 +30,10 @@ disp(strcat(num2str(num_files), ' files selected for analysis.'));
 
 %% calculate mean velocity per second for each replicate
 
+% recalculate total time to total # of bins
+total_time = floor(total_time / binSize);
 seconds = floor(total_time);
-meanVel = zeros(seconds,num_files);
+meanVel = zeros(seconds, num_files);
 meanVel(:) = NaN;
 larvaNum = 1;
 for index = 1:num_files
@@ -60,6 +62,10 @@ for index = 1:num_files
                 [replicate(row,animal+1), replicate(row,animal+2)], ...
                 [replicate(row+dataRate,animal+1), replicate(row+dataRate,animal+2)]);
         end
+        % convert from mm/bin to mm/s
+        velocity = velocity / binSize;
+        
+        
         if (length(velocity) > total_time)
             meanVel(:,larvaNum) = velocity(1:total_time);
         else
@@ -89,12 +95,18 @@ meanVel = meanVel(1:max(lastIdx),:);
 %% plot data
 
 figure('Name','Larva velocity');
-plot(meanVel, 'linew', 1.5, 'LineSmoothing','on');
-axis([0 size(meanVel,1)+5 0 max(meanVel(:)*1.5)])
-xlabel('Bin number', 'fontsize', 11);
-ylabel('Velocity (mm/s)', 'fontsize', 11);
+colormap = jet(size(meanVel, 2));
+hold on;
+for col = 1:size(meanVel, 2)
+    plot((1:seconds) * binSize, meanVel(:, col), ...
+        'linew', 1.5, 'LineSmoothing', 'on', 'color', colormap(col, :));
+end
+hold off;
+axis([0 ((size(meanVel,1) + 1) * binSize) 0 max(meanVel(:)*1.5)])
+xlabel('Time (s)', 'fontsize', 11);
+ylabel('Average velocity (mm/s)', 'fontsize', 11);
 
-legend(cleanLabels(file_name), 'location', 'NorthWest');
+legend(cleanLabels(file_list), 'location', 'NorthWest');
 
 %% write data to disk
 

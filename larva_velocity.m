@@ -9,7 +9,7 @@ total_time = 90;
 % Bin size for velocity calculations (in seconds). Velocity is calculated
 % once per "bin size" by comparing positions at the start and end. Cannot
 % be lower than the rate of data being analyzed (generally 0.5-1s).
-binSize = 1;
+binSize = 4;
 
 %% get file list
 
@@ -52,6 +52,11 @@ for index = 1:num_files
     
     % calc velocities
     dataRate = round(1 / replicate(2, 1)) * binSize;
+    if (dataRate < 1)
+        mexception = MException('larva_velocity:BadParam', ... 
+            'Error: binSize is smaller than minimum data rate.');
+        throw(mexception);
+    end
     velocity = zeros(seconds, 1);
     velocity(:) = NaN;
     for animal = 1:2:(size(replicate, 2) - 1)
@@ -65,7 +70,7 @@ for index = 1:num_files
         % convert from mm/bin to mm/s
         velocity = velocity / binSize;
         
-        
+        % ensure that number of values and total size of array is the same
         if (length(velocity) > total_time)
             meanVel(:,larvaNum) = velocity(1:total_time);
         else

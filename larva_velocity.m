@@ -6,7 +6,12 @@
 % than this, defaults to the shorter time.
 total_time = 90;
 
-%% read files and assemble into array
+% Bin size for velocity calculations (in seconds). Velocity is calculated
+% once per "bin size" by comparing positions at the start and end. Cannot
+% be lower than the rate of data being analyzed (generally 0.5-1s).
+binSize = 5;
+
+%% get file list
 
 [file_name, pathname] = uigetfile({'*.csv;*', ...
     'Comma-separated values (*.csv)'}, ...
@@ -23,14 +28,15 @@ end
 num_files = size(file_list,2);
 disp(strcat(num2str(num_files), ' files selected for analysis.'));
 
-% calculate mean velocity per second for each replicate
+%% calculate mean velocity per second for each replicate
+
 seconds = floor(total_time);
 meanVel = zeros(seconds,num_files);
 meanVel(:) = NaN;
 larvaNum = 1;
 for index = 1:num_files
     %load file
-    disp(file_list(index));
+    disp(cleanLabels(file_list(index)));
     replicate = csvread(char(file_list(index)));
     num_rows = size(replicate,1);
     
@@ -43,12 +49,12 @@ for index = 1:num_files
     end
     
     % calc velocities
-    dataRate = round(1/replicate(2,1));
-    velocity = zeros(seconds,1);
+    dataRate = round(1 / replicate(2, 1)) * binSize;
+    velocity = zeros(seconds, 1);
     velocity(:) = NaN;
-    for animal = 1:2:(size(replicate,2)-1)
+    for animal = 1:2:(size(replicate, 2) - 1)
         % calculate velocity/s for each animal
-        for row = 1:dataRate:(size(replicate,1)-dataRate)
+        for row = 1:dataRate:(size(replicate, 1) - dataRate)
             % the '10 * ' converts to mm/s (coordinates are in cm)
             velocity(floor(row/dataRate)+1) = 10 * pdist2( ...
                 [replicate(row,animal+1), replicate(row,animal+2)], ...
@@ -85,10 +91,10 @@ meanVel = meanVel(1:max(lastIdx),:);
 figure('Name','Larva velocity');
 plot(meanVel, 'linew', 1.5, 'LineSmoothing','on');
 axis([0 size(meanVel,1)+5 0 max(meanVel(:)*1.5)])
-xlabel('Time (s)', 'fontsize', 11);
+xlabel('Bin number', 'fontsize', 11);
 ylabel('Velocity (mm/s)', 'fontsize', 11);
 
-legend(file_name, 'location', 'NorthWest');
+legend(cleanLabels(file_name), 'location', 'NorthWest');
 
 %% write data to disk
 

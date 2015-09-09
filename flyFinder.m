@@ -20,8 +20,6 @@ end
 xpos = mean(xpos);
 ypos = mean(ypos);
 
-% Define 'excl' region in which the background is not updated around the
-% darkest pixel.
 leftEdge = int16(round(xpos) - search_size);
 rightEdge = int16(round(xpos) + search_size);
 topEdge = int16(round(ypos) - search_size);
@@ -48,9 +46,9 @@ search_area = ROI_image(bounds(3):bounds(4), bounds(1):bounds(2));
 if flip == true
     search_area = double(255 - search_area);
 end
-x2 = [1:length(search_area(1,:))]';
-y2 = [1:length(search_area(:,1))]';
-total = sum(sum(search_area));
+x2 = (1:length(search_area(1,:)))';
+y2 = (1:length(search_area(:,1)))';
+total = sum(search_area(:));
 
 % Add x and y positions to array if pixel intensity (the fly) is above a
 % certain threshold.

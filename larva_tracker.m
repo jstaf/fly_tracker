@@ -2,7 +2,7 @@
 
 % Controls how far apart the frames we are analyzing. Setting 'fs' to 15
 % means that every 15 frames are analyzed out of our video.
-fs = 15;
+fs = 1;
 
 sizeThresh = 10;
 
@@ -279,8 +279,8 @@ for column = 1:size(position,2)
 end
 scaledPos = horzcat( ((0:fs:(nfrm_movie-1))/round(vr.FrameRate))', scaledPos);
 % correct spurious points
-scaledPos = distFilter(scaledPos, 1.0);
-scaledPos = interpolatePos(scaledPos, 0.5);
+scaledPos = distFilter(scaledPos, 5);
+scaledPos = interpolatePos(scaledPos, 2.5);
 
 figure('Name','Pathing map');
 x = scaledPos(:,2)';

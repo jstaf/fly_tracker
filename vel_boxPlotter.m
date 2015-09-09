@@ -66,7 +66,7 @@ wide = 0.3;
 
 figure('Name', strcat('Velocity'));
 hold on;
-% plot data
+% plot datainputFiles
 for col = 1:size(plotData, 2)
     % generate plotMean and sem for column in question
     dat = plotData(:, col);

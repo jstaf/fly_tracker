@@ -9,4 +9,7 @@ ffprobe
 *.mat
 old_flytrack.m
 html/
+videos/
+larva_videos/
+Aarya_videos/
 

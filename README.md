@@ -1,15 +1,30 @@
 fly_tracker
 ===========
+A set of MATLAB algorithms designed to track Drosophila and their larvae without requiring any kind of special hardware (even videos from cellphone cameras will work). The fly tracking algorithms are extremely resilient and are even able to function if the animal doesn't move through the entire video or gets obscured by glare (this would normally kill another tracking algorithm). Data QC and cleaing is performed automatically.
 
-A short little MATLAB script that tracks flies.
+Descriptions of what each script does:  
++ **flytrack_video.m** - Tracks flies from a video. Optimized for fast moving objects like adult flies. Loosely based on FTrack.
++ **larva_tracker.m** - An alternate object tracking algorithm optimized for slow objects/stuff that barely even moves, like fly larvae.
++ **calc_velocity.m** - Calculate velocities from a set of position .csvs
++ **stackTrace.m** - Creates stacked position traces from a set of position .csvs.
++ **position_heatmap.m** - Make a heatmap of fly positions with the log(probability) of an animal being in a given location.
++ **boxPlotter.m** - Make a nice box plot of your data with standard error of the mean and individual replicates plotted on top.
++ The other files in this repository are utility functions and debugging tools that come in useful from time to time.
 
-This program analyzes fruit fly (or other small insect) trajectories in a cyndrilical arena. Outputs the coordinates of each fly, distance between two flies, and also a heatmap of the relative probability of a fly being in any given spot. Most settings can be specified by the user using the GUI. 
+##Examples (same data for all)
 
-Hit "Analyze Video" to track the flies in a video, examine the output for multiple replicates of a given genotype with the "Statistics" button (loads .csv files from video analysis), and compare the amount of time flies spend below a certain distance from each other with the "Compare" button (loads .csv files created by the statistics function). 
+Example position trace (adult fly)
 
-Note:
-When running the "Analyze Video" function, it will prompt you for 'rotation correction' (click-and-drag to draw a line parallel to the arena's height, then double-click) and a region-of-interest (click-and-drag to define the inside of the arena, double-click to proceed). When performing 'rotation correction,' the first point you draw should correspond to the top of the arena.
+![Imgur](http://i.imgur.com/UO5OyrO.png)
 
-Contact me at jeff.stafford@live.com if you have any questions about its use or are looking to use it for a publication. Also end me an email if you run into any glaring issues or bugs.
+Stacked position traces (without offset for initial positions)
 
-Unless stated otherwise, I reserve all rights to this software, including, but not limited to commercial use or inclusion in a scientific publication.
+![Imgur](http://i.imgur.com/7kLMQEJ.png)
+
+Heatmap of fly positions (0.2 cm bin size)
+
+![Imgur](http://i.imgur.com/aModsIt.png)
+
+Fly velocities
+
+![Imgur](http://i.imgur.com/8Cogmko.png)

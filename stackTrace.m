@@ -1,5 +1,13 @@
 %% initialize
+% Create a set of stacked position traces. 
 
+% if true, will not offset positions based on a fly's starting point
+preserveOrigin = false;
+
+% size of the arena
+bounds = 8;
+
+%% open files
 % This file opens a set of position traces and stacks and plots them on the
 % same set of coordinates.
 
@@ -15,8 +23,6 @@ if (isa(inputFiles,'char'))
 end
 
 %% make plots
-
-bounds = 5;
 
 % plot files individually
 figure('Name', 'Stacked position traces');
@@ -34,10 +40,13 @@ for fileNum = 1:length(inputFiles)
     end    
     replicate = replicate(1:length(column), :);
     % preliminary filtering
-    replicate = distFilter(replicate, 2);
-    % normalize to first point
-    for col = 2:size(replicate,2)
-        replicate(:, col) = replicate(:, col) - replicate(1, col);
+    replicate = distFilter(replicate, 1);
+    
+    if ~preserveOrigin
+        % normalize to first point
+        for col = 2:size(replicate,2)
+            replicate(:, col) = replicate(:, col) - replicate(1, col);
+        end
     end
     
     plot(replicate(:,2), replicate(:,3), ...
@@ -46,6 +55,13 @@ for fileNum = 1:length(inputFiles)
 end
 hold off;
 
-axis([-bounds bounds -bounds bounds], 'equal', 'manual');
+axis('equal', 'manual');
+set(gca, 'Ydir', 'reverse');
+if preserveOrigin
+    axis([0, bounds, 0, bounds]);
+else
+    axis([-bounds, bounds, -bounds, bounds]);
+end
 plotLabel = cleanLabels(inputFiles);
 legend(plotLabel, 'location', 'eastoutside');
+

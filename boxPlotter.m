@@ -2,15 +2,11 @@
 
 % When in each video do you want to begin the mean velocity calculations?
 % (in seconds)
-start_delay = 30;
+start_delay = 0;
 
 %% select files
     
 [inputFiles] = uipickfiles();
-if (isempty(inputFiles))
-    disp('No files selected.');
-    break;
-end
 
 if (start_delay == 0)
     start_delay = start_delay + 1;
@@ -47,9 +43,9 @@ if (num_files == 2)
     y = y(~isnan(y));
     [decision, pval, conf_int, stats] = ttest2(x,y);
     if (pval <= 0.05)
-        disp(strcat('Null hypothesis rejected, p-value =', {' '}, num2str(pval)));
+        disp(['Null hypothesis rejected, p-value = ',num2str(pval)]);
     else
-        disp(strcat('Failed to reject the null hypothesis, p-value =', {' '}, num2str(pval)));
+        disp(['Failed to reject the null hypothesis, p-value = ' num2str(pval)]);
     end
 elseif (num_files > 2) 
     disp('More than two groups detected, using one-way ANOVA with post-hoc Tukey HSD');

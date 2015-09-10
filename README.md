@@ -17,14 +17,14 @@ Example position trace for an adult fly (the fly starts at the dark blue point a
 
 ![Imgur](http://i.imgur.com/UO5OyrO.png)
 
-Stacked position traces (without offset for initial positions)
+Stacked position traces for multiple videos (without offset for initial positions)
 
 ![Imgur](http://i.imgur.com/7kLMQEJ.png)
 
-Heatmap of fly positions (0.2 cm bin size)
+Heatmap of fly positions across multiple videos (0.2 cm bin size)
 
 ![Imgur](http://i.imgur.com/aModsIt.png)
 
-Fly velocities
+Fly velocities across multiple videos
 
 ![Imgur](http://i.imgur.com/8Cogmko.png)

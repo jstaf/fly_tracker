@@ -9,18 +9,14 @@ total_time = 90;
 % Bin size for velocity calculations (in seconds). Velocity is calculated
 % once per "bin size" by comparing positions at the start and end. Cannot
 % be lower than the rate of data being analyzed (generally 0.5-1s).
-binSize = 4;
+binSize = 1;
 
 %% get file list
 
 [file_name, pathname] = uigetfile({'*.csv;*', ...
     'Comma-separated values (*.csv)'}, ...
     'Select a set of flypath files (created by "larva_tracker.m")...', 'MultiSelect','on');
-if (pathname ~= 0)
-    file_list = strcat(pathname,file_name);
-else
-    break;
-end
+file_list = strcat(pathname,file_name);
 
 if (isa(file_list,'char'))
     file_list = {file_list};
@@ -111,7 +107,7 @@ for col = 2:size(plotData, 2)
         'linew', 1.5, 'LineSmoothing', 'on', 'color', colormap(col - 1, :));
 end
 hold off;
-axis([0 (plotData(end, 1) + binSize) 0 (max(max(meanVel)) * 1.5)])
+axis([0 (plotData(end, 1) + binSize) 0 (max(meanVel(:)) * 1.5)])
 xlabel('Time (s)', 'fontsize', 11);
 ylabel('Average velocity (mm/s)', 'fontsize', 11);
 

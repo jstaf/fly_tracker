@@ -11,9 +11,9 @@ Descriptions of what each script does:
 + **boxPlotter.m** - Make a nice box plot of your data with standard error of the mean and individual replicates plotted on top.
 + The other files in this repository are utility functions and debugging tools that come in useful from time to time.
 
-##Examples (same data for all)
+##Examples
 
-Example position trace (adult fly)
+Example position trace for an adult fly (the fly starts at the dark blue point and moves to the bright yellow one over the course of the video)
 
 ![Imgur](http://i.imgur.com/UO5OyrO.png)
 

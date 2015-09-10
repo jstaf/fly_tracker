@@ -4,7 +4,7 @@ A set of MATLAB algorithms designed to track Drosophila and their larvae without
 
 Descriptions of what each script does:  
 + **flytrack_video.m** - Tracks flies from a video. Optimized for fast moving objects like adult flies. Loosely based on FTrack.
-+ **larva_tracker.m** - An alternate object tracking algorithm optimized for slow objects/stuff that barely even moves, like fly larvae.
++ **larva_tracker.m** - An alternate video tracking algorithm optimized for slow objects/stuff that barely even moves, like fly larvae.
 + **calc_velocity.m** - Calculate velocities from a set of position .csvs
 + **stackTrace.m** - Creates stacked position traces from a set of position .csvs.
 + **position_heatmap.m** - Make a heatmap of fly positions with the log(probability) of an animal being in a given location.

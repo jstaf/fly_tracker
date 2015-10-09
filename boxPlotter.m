@@ -4,6 +4,8 @@
 % (in seconds)
 start_delay = 0;
 
+yAxisLabel = 'Average velocity (mm/s) ';
+
 %% select files
     
 [inputFiles] = uipickfiles();
@@ -20,16 +22,20 @@ plotData(:) = NaN;
 for fileNum = 1:num_files
     rep_new = csvread(char(inputFiles(fileNum)));
     
-    % adjust start delay based on first time measurement in file
-    startDelFile = ceil(start_delay / rep_new(2, 1)) + 1;
-    
-    % calc avg velocity
-    avgVel = zeros(size(rep_new, 2) - 1, 1);
-    for col = 2:size(rep_new, 2)
-        velData = rep_new(startDelFile:size(rep_new, 1), col);
-        avgVel(col - 1) = mean(velData(~isnan(velData)));
+    if size(rep_new, 1) > 1
+        % adjust start delay based on first time measurement in file
+        startDelFile = ceil(start_delay / rep_new(2, 1)) + 1;
+        
+        % calc avg velocity
+        avgVel = zeros(size(rep_new, 2) - 1, 1);
+        for col = 2:size(rep_new, 2)
+            velData = rep_new(startDelFile:size(rep_new, 1), col);
+            avgVel(col - 1) = mean(velData(~isnan(velData)));
+        end
+        avgVel = avgVel(~isnan(avgVel));
+    else
+        avgVel = rep_new(1, 2:end)';
     end
-    avgVel = avgVel(~isnan(avgVel));
     plotData((1:length(avgVel)), fileNum) = avgVel;
 end
 
@@ -97,4 +103,4 @@ set(gca, ...
     'XTickLabel', plotLabel);
 % rotateXLabels(gca(), 45) % looks awful
 ylim([0 (max(max(plotData)) + 0.1)]);
-ylabel(strcat('Average velocity (mm/s) '), 'fontsize', 11);
+ylabel(yAxisLabel, 'fontsize', 11);

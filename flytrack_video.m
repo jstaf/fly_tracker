@@ -91,7 +91,8 @@ for nofr = 1:nfrm_movie
     % Find the fly
     frame_crop = imcrop(frame_int, ROI);
     fr_position = flyFinder(frame_crop, search_size, threshold, true);
-    pos_array(nofr,:) = [nofr, fr_position];
+    % nofr - 1 is for zero based numbering, like the larva tracker
+    pos_array(nofr,:) = [nofr - 1, fr_position]; 
 end
 close(waitDialog);
 

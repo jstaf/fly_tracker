@@ -9,8 +9,17 @@ total_time = 90;
 
 % Bin size for distance calculations (in seconds). Distance is calculated
 % once per "bin size" by comparing positions at the start and end. Cannot
-% be lower than the rate of data being analyzed. 
-binSize = 0.033333;
+% be lower than the rate of data being analyzed. 0.033333 corresponds to 30
+% frames per second, or the native rate of most camera framerates. 
+binSize = 0.0333;
+
+% what distance counts as "no movement" between bin intervals (mm). default is
+% 0.2 for a binSize of 0.03333
+lowDistThresh = 0.2;
+
+% what movement distance counts as a bad track/teleport between bin
+% intervals (mm). default for binSize of 0.03333 is 20
+hiDistThresh = 20;
 
 %% get file list
 
@@ -62,10 +71,12 @@ for index = 1:num_files
     
     %%% FUCK THIS LINE
     dataRate = round(1 / replicate(2, 1)) * binSize;
-    if (dataRate < 1)
+    if (dataRate < 0.98)
         mexception = MException('larva_velocity:BadParam', ... 
             'Error: binSize is smaller than minimum data rate.');
         throw(mexception);
+    else
+        dataRate = round(dataRate);
     end
     
     distance = 0;
@@ -77,16 +88,18 @@ for index = 1:num_files
             if ~isnan(replicate(row,animal+1)) && ...
                     ~isnan(replicate(row - (dataRate * lastBin),animal+1))
                 
-                thisDistance = 10 * pdist2([replicate(row,animal+1), ... 
-                    replicate(row,animal+2)], ...
-                    [replicate(row - (dataRate * lastBin),animal+1), ...
-                    replicate(row - (dataRate * lastBin),animal+2)]);
-                % is thisDistance reasonable? (was there a massive frame
-                % jump due to a bad track)?
-                if thisDistance < 20
+                thisDistance = 10 * pdist2([replicate(row,animal+1), replicate(row,animal+2)], ...
+                    [replicate(row - (dataRate * lastBin),animal+1), replicate(row - (dataRate * lastBin),animal+2)]);
+                % is thisDistance reasonable? 
+                if thisDistance < lowDistThresh;
+                    % animal likely did not move, do nothing here
+                    continue;
+                elseif thisDistance < hiDistThresh;
+                    % animal moved a realistic amount
                     distance = distance + thisDistance;               
                     lastBin = 1;
                 else
+                    % likely a "teleport" due to a bad track
                     lastBin = lastBin + 1;
                 end
             else
@@ -104,22 +117,6 @@ end
 % create a first column of timepoint labels, that indicates the total time
 % used
 plotData = [total_time * binSize, dists];
-
-%% plot data
-
-figure('Name','Larva velocity');
-colormap = jet(size(dists, 2));
-hold on;
-for col = 2:size(plotData, 2)
-    plot(plotData(:, 1), plotData(:, col), ...
-        'linew', 1.5, 'LineSmoothing', 'on', 'color', colormap(col - 1, :));
-end
-hold off;
-axis([0 (plotData(end, 1) + binSize) 0 (max(dists(:)) * 1.5)])
-xlabel('Time (s)', 'fontsize', 11);
-ylabel('Average velocity (mm/s)', 'fontsize', 11);
-
-legend(cleanLabels(file_list), 'location', 'NorthWest');
 
 %% write data to disk
 

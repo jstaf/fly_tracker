@@ -30,9 +30,8 @@ width = 8;
 [video_name, pathname] = uigetfile({'*.avi;*.mj2;*.mpg;*.mp4;*.m4v;*.mov', ...
     'Video Files (*.avi;*.mj2;*.mpg;*.mp4;*.m4v;*.mov)'}, ...
     'Select a video to analyze...', 'MultiSelect','off');
-video_name = [pathname, video_name];
-
 disp(['Opening ', video_name, ', please wait.']);
+video_name = [pathname, video_name];
 vr = VideoReader(video_name);
 resolution = [vr.Width vr.Height];
 nfrm_movie = floor(vr.Duration * vr.FrameRate) - 1;

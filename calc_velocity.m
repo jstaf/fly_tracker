@@ -78,7 +78,8 @@ for index = 1:num_files
 end
 
 % remove any absurd velocities that aren't actually possible (in this case over 1 cm/s)
-meanVel(meanVel > 10) = NaN;
+meanVel(meanVel > 30) = NaN;
+meanVel(meanVel < 0.4) = 0;
 
 % find last datapoint and cut array down to size
 lastIdx = zeros(size(meanVel,2),1);
